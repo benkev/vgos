@@ -1,16 +1,16 @@
 '''
-plot_multcorr_group.py
+plot_multcorr.py
+'''
+help_text = '''
+Generate plots of the band-pols for one experiment on one station.
 
-Generate plots of all the band-pols for one or all the stations.
-
-Arguments (optional):
+Arguments:
   -s <a station letter>, like E, G, H ... (or in lower case, e, g, h ...);
   -d <pcc_datfiles directory>       like /data/geodesy/3686/pcc_datfiles
   -o <output directory name>        where .png graphs and .txt logs are saved
+  -p                                show plot
+  -h                                print this text'''
 
-If called with no arguments, it processes all the stations E, G, H, I, V, and Y.
-
-'''
 
 import numpy as np
 import numpy.linalg as la
@@ -27,18 +27,51 @@ import getopt
 #
 # Process command line options
 #
-stations = ('E', 'G', 'H', 'I', 'V', 'Y') 
-plotdir = ''
-optlist = getopt.getopt(sys.argv[1:], 's:o:')[0]
+if sys.argv[1:] == []: # Print help text and exit if no command line options
+    print(help_text)
+    raise SystemExit
+
+optlist = getopt.getopt(sys.argv[1:], 's:d:o:ph')[0]
+
+for opt, val in optlist:
+    if opt == '-h':  # Print help text and exit if there is '-h' among options
+        print(help_text)
+        raise SystemExit
+
+datadir = ''
+outdir = ''
+plot_graph = False
+
 for opt, val in optlist:
     if opt == '-s':
-        stations = (val.upper(), )  # A letter like E or e, G or g etc.
+        station = val.upper()     # A letter like E or e, G or g etc.
+    elif opt == '-d':
+        datadir = val
     elif opt == '-o':
-        plotdir = val
-        if plotdir[-1] != '/':
-            plotdir += '/'
-        if not os.path.isdir(plotdir):
-            os.mkdir(plotdir)
+        outdir = val              # Like /data/geodesy/3671/pcc_datfiles_jb
+        if outdir[-1] != '/':
+            outdir += '/'
+        if not os.path.isdir(outdir):
+            os.mkdir(outdir)
+    elif opt == '-p':
+        plot_graph = True
+
+fnames = glob.glob(datdir + '/bandmodel.??????.' + station + '.?.?.dat')
+nbandpol = len(fnames)
+datadir_exists = True
+station_data_exist = True
+
+if not os.path.isdir(datadir):
+    print('ERROR: Path ' + datadir + ' does not exist.')
+    datadir_exists = False
+
+
+if nbandpol == 0:          # No data for the station 
+    print('ERROR: No data for station ' + station + 'on path ' + datadir)
+    station_data_exist = False
+
+
+raise SystemExit
 
 
 bp_sym = ['AX', 'AY', 'BX', 'BY', 'CX', 'CY', 'DX', 'DY']
@@ -81,9 +114,9 @@ rYlGn = ListedColormap(cmYlGn(np.linspace(0.0, 0.6, 256)), name='rYlGn')
 #
 
 for st in stations:
-    # fout = open('multcorr_station'+ st +'.txt', 'w')
+    # fout = open('multcorr_station'+ station +'.txt', 'w')
 
-    with open('station'+ st +'.txt') as fh: 
+    with open('station'+ station +'.txt') as fh: 
         dlines = fh.readlines()
 
     #sys.exit(1)
@@ -94,7 +127,7 @@ for st in stations:
     while '\n' in dlines: # Remove empty lines
         dlines.remove('\n')
 
-    print('Station ' + st)
+    print('Station ' + station)
 
     nexperm = len(dlines)
     bad_bandpols =  [] # List of lists of BAD band-polarizations
@@ -175,7 +208,7 @@ for st in stations:
             # fout.write('++++ '+wrline2 + '\n')
             continue # ============================================== >>>
 
-        fnames = glob.glob(datdir + '/bandmodel.??????.' + st + '.?.?.dat')
+        fnames = glob.glob(datdir + '/bandmodel.??????.' + station + '.?.?.dat')
 
         if len(fnames) == 0: # No data for the station st
             continue # ============================================== >>>
@@ -184,7 +217,7 @@ for st in stations:
 
         nfile = len(fnames)
 
-        figname = plotdir + 'bandpol_st_' + st + '_' + exc + '_' + exn + \
+        figname = outdir + 'bandpol_st_' + station + '_' + exc + '_' + exn + \
                   '_ABCD_XY.png'
 
         #
@@ -297,7 +330,7 @@ for st in stations:
         #
         fig = plt.figure(figsize=(8.5,11))
         fig.suptitle("Exp. " + exn + " (code " + exc + \
-                     "), Station " + st + \
+                     "), Station " + station + \
                      ". Delay trend for bands ABCD:XY and R_multcorr")
         strpol =  'XY'
         strband = 'ABCD'
