@@ -4,8 +4,8 @@ plot_multcorr_group.py
 Generate plots of all the band-pols for one or all the stations.
 
 Arguments (optional):
-  -s <a station letter>, like E (or in lower case, e);
-  -o <output directory name> 
+  -s <a station letter>, like E, G, H ... (or in lower case, e, g, h ...);
+  -o <output directory name>        where .png graphs and .txt logs are saved
 
 If called with no arguments, it processes all the stations E, G, H, I, V, and Y.
 
