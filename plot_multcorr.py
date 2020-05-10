@@ -5,6 +5,7 @@ Generate plots of all the band-pols for one or all the stations.
 
 Arguments (optional):
   -s <a station letter>, like E, G, H ... (or in lower case, e, g, h ...);
+  -d <pcc_datfiles directory>       like /data/geodesy/3686/pcc_datfiles
   -o <output directory name>        where .png graphs and .txt logs are saved
 
 If called with no arguments, it processes all the stations E, G, H, I, V, and Y.
