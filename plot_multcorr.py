@@ -5,6 +5,7 @@ help_text = '''
 Generate plots of the band-pols for one experiment on one station.
 
 Arguments:
+  -t <threshold>              for multiple correlation coefficient, 0. to 100.
   -s <a station letter>, like E, G, H ... (or in lower case, e, g, h ...);
   -d <pcc_datfiles directory>       like /data/geodesy/3686/pcc_datfiles
   -o <output directory name>        where .png graphs and .txt logs are saved
@@ -22,6 +23,8 @@ import re
 import datetime, time, calendar
 from functools import reduce
 import getopt
+
+threshold_0 = 90.
 
 stations = ('E', 'G', 'H', 'I', 'V', 'Y') 
 bp_sym = ['AX', 'AY', 'BX', 'BY', 'CX', 'CY', 'DX', 'DY']
@@ -43,7 +46,7 @@ if sys.argv[1:] == []: # Print help text and exit if no command line options
     print(help_text)
     raise SystemExit
 
-optlist = getopt.getopt(sys.argv[1:], 's:d:o:ph')[0]
+optlist = getopt.getopt(sys.argv[1:], 't:s:d:o:ph')[0]
 
 for opt, val in optlist:
     if opt == '-h':  # Print help text and exit if there is '-h' among options
@@ -59,6 +62,14 @@ datadir_exists = True
 station_data_exist = True
 
 for opt, val in optlist:
+    if opt == '-t':
+        t_0 = float(val)
+        if t_0 < 0.:
+            threshold_0 = 0.
+        elif t_0 > 100.:
+            threshold_0 = 100.
+        else:
+            threshold_0 = t_0
     if opt == '-s':
         station = val.upper()     # A letter like E or e, G or g etc.
     elif opt == '-d':
@@ -100,32 +111,37 @@ if '' in [datadir, station]:
 if False in [datadir_exists,station_data_exist]: 
     raise SystemExit
 
-raise SystemExit
+#
+# Extract from path the experiment code like /3686/
+#
+exc = re.findall('\/[0-9]{4}\/', datadir)
+exc = exc[0][1:-1]
+
+#
+# Extract from data file name the experiment name like .VT9050.
+#
+exn = re.findall('\.[A-y]{2}[0-9]{4}\.', fnames[0])
+exn = exn[0][1:-1]
+
+outname = outdir + 'bandpol_st_' + station + '_' + exc + '_' + exn + \
+          '_ABCD_XY'
+figname = outname + '.png'
+txtname = outname + '.txt'
+
 
 #
 # Create hotr, an inverted 'hot' colormap with frduced dynamic range
 # (From white throuhg yellow to dense red)
 #
-cmhot_r = plt.cm.get_cmap('hot_r')
-hotr = ListedColormap(cmhot_r(np.linspace(0.0, 0.7, 256)), name='hotr')
+# cmhot_r = plt.cm.get_cmap('hot_r')
 # hotr = ListedColormap(cmhot_r(np.linspace(0.0, 0.7, 256)), name='hotr')
+
+#
+# Create rYlGn, a YlGn (Yellow-Green) colormap with frduced dynamic range
+#
 cmYlGn = plt.cm.get_cmap('YlGn')
 rYlGn = ListedColormap(cmYlGn(np.linspace(0.0, 0.6, 256)), name='rYlGn')
 
-ddir = '/data/geodesy/' + exc + '/pcc_datfiles'
-if os.path.isdir(ddir):
-    datdir = copy.copy(ddir)
-elif os.path.isdir(ddir + '_jb'):
-    datdir = ddir + '_jb'
-else:
-    wrline2 = 'Neither "'+ddir+'" nor "'+ddir+ \
-             '_jb" exists. \n     Skipped.'
-    print(wrline2)
-    # fout.write('++++ '+wrline2 + '\n')
-
-
-figname = outdir + 'bandpol_st_' + station + '_' + exc + '_' + exn + \
-          '_ABCD_XY.png'
 
 #
 # Read all the 8 channel data into the array list datlist.
@@ -134,23 +150,26 @@ figname = outdir + 'bandpol_st_' + station + '_' + exc + '_' + exn + \
 #
 min_ndat = 1000000000
 datlist = []
-ndats = np.zeros(nfile, dtype=int)
-for ix in range(nfile):
+ndats = np.zeros(nbandpol, dtype=int)
+for ix in range(nbandpol):
     dat_ix = np.loadtxt(fnames[ix], dtype=fields)
     ndats[ix] = dat_ix.shape[0]
     if dat_ix.shape[0] < min_ndat:
         min_ndat = dat_ix.shape[0]
     datlist.append(dat_ix)
 
-for ix in range(nfile):  # Reduce the arrays in datlist to minimum size
+for ix in range(nbandpol):  # Reduce the arrays in datlist to minimum size
     if ndats[ix] != min_ndat:
         datlist[ix] = datlist[ix][:min_ndat]
 
 dat = np.array(datlist)  # Convert list of struct. arrays to array
 ndat = np.size(dat,1)    # Height of a column
-delps = np.zeros((nfile,ndat), dtype=float)  # Cable delays (ps)
+delps = np.zeros((nbandpol,ndat), dtype=float)  # Cable delays (ps)
 
-for ix in range(nfile):
+#
+# The cable delays for all band-pols are put in 2D appay delps
+#
+for ix in range(nbandpol):
     delps[ix,:] = dat[ix]['delay_ps']
 
 #
@@ -184,12 +203,6 @@ for itim in range(ndat):
 t_hr = (t_sec - tstamp0)/3600.    # Time in hours  
 
 
-
-
-
-
-nbandpol = nfile # Assume there are 8 files for each band and pol
-
 #
 # Compute 8x8 correlation matrix of rows of delps[8,878]
 #
@@ -222,14 +235,24 @@ R_mult = np.sqrt(R_mult2)
 R_percent = 100.*R_mult
 
 #
-# Write station file with multcorr values
+# Write log file with multcorr values
 #
-wrline2 = 5*' ' + exn + ' '
+fout = open(txtname, 'w')
+
+wrline1 = exc + ' ' + exn + '  '
+for ibp in range(nbp):         # nbp = 8 bandpols
+    wrline1 += '    ' + bp_sym[ibp] + '    '
+
+wrline2 = 13*' '
 for ibp in range(nbandpol):
-    wrline2 += ' {:7.4f}  '.format(100*R_mult[ibp])
+    wrline2 += ' {:7.4f}  '.format(R_percent[ibp])
 
-# fout.write(wrline2 + '\n')
+fout.write(wrline1 + '\n')
+fout.write(wrline2 + '\n')
 
+#fout.close()
+
+#raise SystemExit
 
 
 #
@@ -244,7 +267,7 @@ strband = 'ABCD'
 
 iplot = 0
 for ibp in range(nbandpol):
-    ip = ibp % 2        # 0 1 0 1 0 1 0 1
+    ip = ibp % 2         # 0 1 0 1 0 1 0 1
     ib = ibp // 2        # 0 0 1 1 2 2 3 3
     iplot = iplot + 1   # subplot index starts from 1
 
@@ -265,7 +288,7 @@ for ibp in range(nbandpol):
              markerfacecolor=rYlGn.colors[icol])
     ax.text(x_text, y_text, '%5.2f' % R_percent[ibp])
 
-    if bp_sym[ibp] in bad_bandpols[idl]:
+    if R_percent[ibp] < threshold_0:
         x_text2 = xmin + 0.05*(xmax - xmin)
         y_text2 = ymin + 0.87*(ymax - ymin)
         ax.text(x_text2, y_text2, 'Rejected', color='r')
@@ -273,7 +296,7 @@ for ibp in range(nbandpol):
     ax.set_ylabel(band_pol + " delay (ps)")
     ax.grid(True)
 
-    if iplot == 7 or iplot == 8: # bottom two plots
+    if iplot == 7 or iplot == 8: # two bottom plots
         ax.set_xlabel("hours since doy " + exp_doy_time)
 
 fig.tight_layout()
@@ -282,12 +305,12 @@ fig.subplots_adjust(top=0.94)
 fig.savefig(figname)
 
 if plot_graph:
-    plt.show()
+    fig.show()
 else:
     plt.close(fig)
         
 
-    # fout.close()
+fout.close()
 
 
 
