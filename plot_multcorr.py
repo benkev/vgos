@@ -2,7 +2,9 @@
 plot_multcorr.py
 '''
 help_text = '''
-Generate plots of the band-pols for one experiment on one station.
+Generates plots of the band-pols for one experiment on one station,
+computing the multiple correlation coefficients of each band-pol with respect
+to other band-pols to reject the plots with the mult-corr below the threshold.
 
 Arguments:
   -t <threshold>              for multiple correlation coefficient, 0. to 100.
