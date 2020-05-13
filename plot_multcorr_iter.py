@@ -5,7 +5,7 @@ help_text = '''
 Generate plots of the band-pols for one experiment on one station.
 
 Arguments:
-  -t <threshold>              for multiple correlation coefficient, 0. to 100.
+  -t <threshold>  initial value for multiple correlation coefficient, 0. to 100.
   -s <a station letter>, like E, G, H ... (or in lower case, e, g, h ...);
   -d <pcc_datfiles directory>       like /data/geodesy/3686/pcc_datfiles
   -o <output directory name>        where .png graphs and .txt logs are saved
@@ -17,6 +17,8 @@ If output directory not specified, the results .png and .txt are saved in
 current directory.
 
 '''
+# np.set_printoptions(precision=3)
+
 
 
 import numpy as np
@@ -29,6 +31,53 @@ import re
 import datetime, time, calendar
 from functools import reduce
 import getopt
+
+
+
+
+def mult_corr(Rxx_full, bp_good):
+    '''
+    Compute squares of the multiple correlation coefficients for
+    every bandpol as vector-matrix-vector product
+      R^2_mult = C.T * Rxx^-1 * C,
+    where 
+      C = cor, the vector of cross-correlations of each of the 7 bandpols
+      C.T is C transposed,
+      Rxx is the matrix of cross-correlations between the band-pol series  
+
+    Rxx_full: 8x8 correlation matrix of rows of delps[8,878]
+    bp_good: list of indices of good band-pols
+    '''
+    cols = copy.copy(bp_good)       # Like [ 2,   3,   4,   5,   7 ]
+    rows = [[i] for i in cols]      # Like [[2], [3], [4], [5], [7]]
+
+    Rxx_good = Rxx_full[rows,cols]
+
+
+    nbandpol_good = np.size(Rxx_good, 0)
+    R_mult2 = np.zeros(nbandpol_good, dtype=float)  # Squared mult corrs
+    R_mult = np.zeros_like(R_mult2)                 # Mult corr coefficients
+
+    for ibp in range(nbandpol_good):
+        #
+        # The ibp-th bandpol is assumed an independent variable.
+        #
+        # Rxx is the correlation matrix of the bandpols except the ibp-th one
+        # obtained by scratching off ibp-th row and ibp-th column from Rxx_good
+        Rxx = np.delete(np.delete(Rxx_good, ibp, axis=0), ibp, axis=1)
+
+        # cor is the vector of cross-correlations of each of the bandpols,
+        # except the ibp-th one, with the ibp-th bandpol.
+        cor = np.delete(Rxx_good[ibp,:], ibp, axis=0)
+
+        invRxx = la.inv(Rxx)
+        R_mult2[ibp] = reduce(np.dot, [cor, invRxx, cor])  # = C.T * Rxx^-1 * C
+
+    return R_mult2
+
+
+
+
 
 threshold_0 = 90.
 
@@ -210,50 +259,55 @@ t_hr = (t_sec - tstamp0)/3600.    # Time in hours
 
 
 #
-# Compute 8x8 correlation matrix of rows of delps[8,878]
+# Compute 8x8 correlation matrix of rows of all delps[8,:]
 #
 Rxx_full = np.corrcoef(delps)
 
 #
-# Compute the multiple correlation coefficients for
-# every bandpol
-#          
-R_mult2 = np.zeros(nbandpol, dtype=float)  # Squared mult corrs
-R_mult = np.zeros(nbandpol, dtype=float)   # Mult corr coefficients
-bprange = np.arange(nbandpol) 
-bpxy = np.array([bp for bp in itr.combinations(bprange,2)], dtype=int)
-bpx = bpxy[:,0]
-bpy = bpxy[:,1]
-for ibp in range(nbandpol):
-    #
-    # The ibp-th bandpol is assumed an independent variable.
-    # Rxx is the correlation matrix of 7 other bandpols;
-    # cor is the vector of cross-correlations of each of the 7 bandpols
-    # with the ibp-th bandpol.
-    #
-    Rxx = np.delete(np.delete(Rxx_full, ibp, axis=0), ibp, axis=1)
-    cor = np.delete(Rxx_full[ibp,:], ibp, axis=0)
-    invRxx = la.inv(Rxx)
-    # R2 = multi_dot([cor, Rxx, cor])
-    # R2 = cor.dot(Rxx).dot(cor)
-    R_mult2[ibp] = reduce(np.dot, [cor, invRxx, cor])
-R_mult = np.sqrt(R_mult2)
-R_percent = 100.*R_mult
-
-#
-# Write log file with multcorr values
+# Open log file with multcorr values
 #
 fout = open(txtname, 'w')
 
+# Write header: experinent code, name, bandpol
 wrline1 = exc + ' ' + exn + '  '
-for ibp in range(nbp):         # nbp = 8 bandpols
+for ibp in range(nbp):                         # nbp = 8 bandpols
     wrline1 += '    ' + bp_sym[ibp] + '    '
+fout.write(wrline1 + '\n')
+
+#
+# Assume all the bandpols are good
+# Compute multiple correlation coefficients for the bandpols in bp_good list
+# Fitst, compute multiple correlation coefficients for all the bandpols
+#
+bp_good = [i for i in range(nbandpol)]
+
+R_mult2 = mult_corr(Rxx_full, bp_good)
+
+R_mult = np.sqrt(R_mult2)
+R_percent = 100.*R_mult
+
+idxmin_R = argmin(R_percent)
+
+while R_percent[idxmin_R] < threshold_0:
+    bp_good.remove(idxmin_R)  # 
+
+    #idxmin_R = argmin(R_percent)
+    if 
+
+#
+# Compute multiple correlation coefficients for the bandpols in bp_good list
+#
+
+
+# np.set_printoptions(precision=3)
+
+
+
 
 wrline2 = 13*' '
 for ibp in range(nbandpol):
     wrline2 += ' {:7.4f}  '.format(R_percent[ibp])
 
-fout.write(wrline1 + '\n')
 fout.write(wrline2 + '\n')
 
 #fout.close()
