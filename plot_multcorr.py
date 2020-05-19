@@ -3,11 +3,15 @@ plot_multcorr.py
 '''
 help_text = '''
 Generates plots of the band-pols for one experiment on one station,
-computing the multiple correlation coefficients of each band-pol with respect
-to other band-pols to reject the plots with the mult-corr below the threshold.
+Computs the multiple correlation coefficients of each band-pol with respect
+to other band-pols.
+Computes medians for the rows (or columns) of the correlation matrix.
+The plots with the mult-corr below its threshold (-t or 90.) or with the 
+correlation median below its threshold (-m or 0.5) are marked as "Rejected". 
 
 Arguments:
   -t <threshold>              for multiple correlation coefficient, 0. to 100.
+  -m <threshold>              for correlation median, -1 to 1.
   -s <a station letter>, like E, G, H ... (or in lower case, e, g, h ...);
   -d <pcc_datfiles directory>       like /data/geodesy/3686/pcc_datfiles
   -o <output directory name>        where .png graphs and .txt logs are saved
@@ -20,6 +24,7 @@ import numpy as np
 import numpy.linalg as la
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
+from phasecal import mult_corr
 import os, sys, glob, copy
 import itertools as itr
 import re
@@ -27,7 +32,9 @@ import datetime, time, calendar
 from functools import reduce
 import getopt
 
-threshold_0 = 90.
+
+threshold_mulcor = 90.
+threshold_median = 0.5
 
 stations = ('E', 'G', 'H', 'I', 'V', 'Y') 
 bp_sym = ['AX', 'AY', 'BX', 'BY', 'CX', 'CY', 'DX', 'DY']
@@ -69,11 +76,19 @@ for opt, val in optlist:
     if opt == '-t':
         t_0 = float(val)
         if t_0 < 0.:
-            threshold_0 = 0.
+            threshold_mulcor = 0.
         elif t_0 > 100.:
-            threshold_0 = 100.
+            threshold_mulcor = 100.
         else:
-            threshold_0 = t_0
+            threshold_mulcor = t_0
+    if opt == '-m':
+        m_0 = float(val)
+        if m_0 < -1.:
+            threshold_median = -1.
+        elif m_0 > 1.:
+            threshold_median = 1.
+        else:
+            threshold_mulcor = m_0
     if opt == '-s':
         station = val.upper()     # A letter like E or e, G or g etc.
     elif opt == '-d':
@@ -137,7 +152,7 @@ txtname = outname + '.txt'
 outname2 = outdir + 'xcorr_matrix_st_' + station + '_' + exc + '_' + exn + \
           '_ABCD_XY'
 figname2 = outname2 + '.png'
-txtname2 = outname2 + '.txt'
+# txtname2 = outname2 + '.txt'
 
 
 #
@@ -215,38 +230,27 @@ t_hr = (t_sec - tstamp0)/3600.    # Time in hours
 
 
 #
-# Compute 8x8 correlation matrix of rows of delps[8,878]
+# Compute nbandpol X nbandpol correlation matrix of rows of delps[nbandpol,:]
 #
 Rxx_full = np.corrcoef(delps)
 
 #
-# Compute the multiple correlation coefficients for
-# every bandpol
+# Compute medians for the rows (or columns) of the correlation matrix
+# Low median points at too weak correlation of a selected bandpol with
+# other bandpols.
+#
+Rxx_full_0 = np.copy(Rxx_full)
+for i in range(nbandpol):      # Replace ones at the diagonal with zeros
+    Rxx_full_0[i,i] = 0.
+
+corr_median = np.median(Rxx_full, axis=0)
+
+
+#
+# Compute the multiple correlation coefficients for every bandpol
 #          
-R_mult2 = np.zeros(nbandpol, dtype=float)  # Squared mult corrs
-R_mult = np.zeros(nbandpol, dtype=float)   # Mult corr coefficients
-bprange = np.arange(nbandpol) 
-bpxy = np.array([bp for bp in itr.combinations(bprange,2)], dtype=int)
-bpx = bpxy[:,0]
-bpy = bpxy[:,1]
-for ibp in range(nbandpol):
-    #
-    # The ibp-th bandpol is assumed an independent variable.
-    # Rxx is the correlation matrix of 7 other bandpols;
-    # cor is the vector of cross-correlations of each of the 7 bandpols
-    # with the ibp-th bandpol.
-    #
-    Rxx = np.delete(np.delete(Rxx_full, ibp, axis=0), ibp, axis=1)
-    cor = np.delete(Rxx_full[ibp,:], ibp, axis=0)
-    invRxx = la.inv(Rxx)
-    # R2 = multi_dot([cor, Rxx, cor])
-    # R2 = cor.dot(Rxx).dot(cor)
-    R_mult2[ibp] = reduce(np.dot, [cor, invRxx, cor])
-R_mult = np.sqrt(R_mult2)
+R_mult = mult_corr(Rxx_full)
 R_percent = 100.*R_mult
-
-
-
 
 
 
@@ -289,8 +293,16 @@ for iy in range(nbandpol):
     for ix in range(nbandpol):
         wrl += ' {:6.3f} '.format(Rxx_full[iy,ix])
     fout.write(wrl + '\n')
-
 fout.write('\n')
+
+#
+# Save the cross-correlation medians in file
+#
+wrl = '      Medians '
+for ix in range(nbandpol):
+    wrl += ' {:6.3f} '.format(corr_median[ix])
+
+fout.write(wrl + '\n\n')
 
 fout.close()
 
@@ -328,11 +340,18 @@ for ibp in range(nbandpol):
     ax.plot(x_marker, y_marker, marker='s', markersize=20, \
              markerfacecolor=rYlGn.colors[icol])
     ax.text(x_text, y_text, '%5.2f' % R_percent[ibp])
-
-    if R_percent[ibp] < threshold_0:
+    
+    if (R_percent[ibp] < threshold_mulcor) or \
+       (corr_median[ibp] < threshold_median):
         x_text2 = xmin + 0.05*(xmax - xmin)
-        y_text2 = ymin + 0.87*(ymax - ymin)
-        ax.text(x_text2, y_text2, 'Rejected', color='r')
+        #x_text3 = xmin + 0.30*(xmax - xmin)
+        #y_text2 = ymin + 0.87*(ymax - ymin)
+        ax.text(x_text2, y_text, 'Rejected', color='r')
+
+    # Print correlation median
+    x_text3 = xmin + 0.30*(xmax - xmin)
+    ax.text(x_text3, y_text, '%5.2f' % corr_median[ibp], color='k')
+
 
     ax.set_ylabel(band_pol + " delay (ps)")
     ax.grid(True)
@@ -377,8 +396,10 @@ if plot_xcorrmx:
     fig2.text(0.1, 0.95, 'Cross-Correlation Matrix. Station ' + station +
                  ', Exp. ' + exn + ', Code ' + exc)
 
-    fig.tight_layout()
-    fig.subplots_adjust(top=0.94)
+    #fig.tight_layout()
+    #fig.subplots_adjust(top=0.94)
+
+    fig2.savefig(figname2)
 
 
 if plot_graph:
