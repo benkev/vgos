@@ -11,6 +11,7 @@ Arguments:
   -s <a station letter>, like E, G, H ... (or in lower case, e, g, h ...);
   -d <pcc_datfiles directory>       like /data/geodesy/3686/pcc_datfiles
   -o <output directory name>        where .png graphs and .txt logs are saved
+  -x                                plot x-correlation matrix
   -p                                show plot
   -h                                print this text'''
 
@@ -48,7 +49,7 @@ if sys.argv[1:] == []: # Print help text and exit if no command line options
     print(help_text)
     raise SystemExit
 
-optlist = getopt.getopt(sys.argv[1:], 't:s:d:o:ph')[0]
+optlist = getopt.getopt(sys.argv[1:], 't:s:d:o:phx')[0]
 
 for opt, val in optlist:
     if opt == '-h':  # Print help text and exit if there is '-h' among options
@@ -62,6 +63,7 @@ nbandpol = 0
 plot_graph = False
 datadir_exists = True
 station_data_exist = True
+plot_xcorrmx = False
 
 for opt, val in optlist:
     if opt == '-t':
@@ -82,6 +84,8 @@ for opt, val in optlist:
             outdir += '/'
         if not os.path.isdir(outdir):
             os.mkdir(outdir)
+    elif opt == '-x':
+        plot_xcorrmx = True
     elif opt == '-p':
         plot_graph = True
 
@@ -129,6 +133,11 @@ outname = outdir + 'bandpol_st_' + station + '_' + exc + '_' + exn + \
           '_ABCD_XY'
 figname = outname + '.png'
 txtname = outname + '.txt'
+
+outname2 = outdir + 'xcorr_matrix_st_' + station + '_' + exc + '_' + exn + \
+          '_ABCD_XY'
+figname2 = outname2 + '.png'
+txtname2 = outname2 + '.txt'
 
 
 #
@@ -236,25 +245,55 @@ for ibp in range(nbandpol):
 R_mult = np.sqrt(R_mult2)
 R_percent = 100.*R_mult
 
+
+
+
+
+
 #
 # Write log file with multcorr values
 #
 fout = open(txtname, 'w')
 
-wrline1 = exc + ' ' + exn + '  '
-for ibp in range(nbp):         # nbp = 8 bandpols
-    wrline1 += '    ' + bp_sym[ibp] + '    '
+wrl1_1 = '#\n# Mulpiple Correlation Coefficients (%). Station ' + station + \
+         ', Exp. ' + exn + ', Code ' + exc + '\n#\n'
+wrl1_2 = '#'
 
-wrline2 = 13*' '
+fout.write(wrl1_1 + '\n')
+
+wrline1 = '# ' + exc + ' ' + exn + ' '
+for ibp in range(nbp):         # nbp = 8 bandpols
+    wrline1 += '    ' + bp_sym[ibp] + '  '
+
+wrline2 = 15*' '
 for ibp in range(nbandpol):
-    wrline2 += ' {:7.4f}  '.format(R_percent[ibp])
+    wrline2 += ' {:5.2f}  '.format(R_percent[ibp])
 
 fout.write(wrline1 + '\n')
-fout.write(wrline2 + '\n')
+fout.write(wrline2 + '\n\n')
 
-#fout.close()
+#
+# Save the cross-correlation matrix in file
+#
+wrl2_1 = '#\n# Cross-Correlation Matrix. Station ' + station + \
+         ', Exp. ' + exn + ', Code ' + exc + '\n#\n'
+wrl2_2 = 14*' '
+for ibp in range(nbp):         # nbp = 8 bandpols
+    wrl2_2 += '    ' + bp_sym[ibp] + '  '
 
-#raise SystemExit
+fout.write(wrl2_1)
+fout.write(wrl2_2 + '\n')
+
+for iy in range(nbandpol):
+    wrl = 11*' ' + bp_sym[iy] + ' '
+    for ix in range(nbandpol):
+        wrl += ' {:6.3f} '.format(Rxx_full[iy,ix])
+    fout.write(wrl + '\n')
+
+fout.write('\n')
+
+fout.close()
+
 
 
 #
@@ -306,13 +345,51 @@ fig.tight_layout()
 fig.subplots_adjust(top=0.94)
 fig.savefig(figname)
 
+if plot_xcorrmx:
+    #
+    # Do not plot the half of cross-correlation matrix under the diagonal
+    #
+    Rxx_nan = np.copy(Rxx_full)
+    for ix in range(nbandpol):
+        Rxx_nan[ix,:(ix+1)] = np.NaN
+
+    #
+    # Use inverted 'hot' colormap with reduced dynamic range
+    # (From white throuhg yellow to dense red)
+    #
+    cmhot_r = plt.cm.get_cmap('hot_r')
+    hotr = ListedColormap(cmhot_r(np.linspace(0.0, 0.7, 256)), name='hotr')
+    n0_7 = np.arange(8)  # Tick values for 
+
+    fig2 = plt.figure(figsize=(6,5));
+    ax2 = plt.subplot(111)
+
+    xcorimg = ax2.imshow(Rxx_nan, interpolation='none', cmap=hotr);
+    #xcorimg = ax2.imshow(Rxx_nan, interpolation='none', cmap=rYlGn);
+    #plt.pcolormesh(Rxx_full, cmap=plt.cm.jet, offset_position='data');
+    ax2.set_xticks(n0_7)
+    ax2.set_xticklabels(bp_sym)
+    ax2.tick_params(axis='x', labeltop='on')
+    ax2.set_yticks(n0_7)
+    ax2.set_yticklabels(bp_sym)
+    #ax2.grid(1)
+    fig2.colorbar(xcorimg, shrink=0.8)
+    fig2.text(0.1, 0.95, 'Cross-Correlation Matrix. Station ' + station +
+                 ', Exp. ' + exn + ', Code ' + exc)
+
+    fig.tight_layout()
+    fig.subplots_adjust(top=0.94)
+
+
 if plot_graph:
     fig.show()
+    fig2.show()
 else:
     plt.close(fig)
+    plt.close(fig2)
         
 
-fout.close()
+# fout.close()
 
 
 
