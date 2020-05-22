@@ -1,5 +1,5 @@
 '''
-plot_multcorr.py
+plot_multcorr_all.py
 '''
 help_text = '''
 Generates plots of the band-pols for one experiment on one station,
@@ -15,9 +15,16 @@ Arguments:
   -s <a station letter>, like E, G, H ... (or in lower case, e, g, h ...);
   -d <pcc_datfiles directory>       like /data/geodesy/3686/pcc_datfiles
   -o <output directory name>        where .png graphs and .txt logs are saved
-  -x                                plot x-correlation matrix
-  -p                                show plot
-  -h                                print this text'''
+  -x                          plot x-correlation matrix
+  -p                          show plot in X-window
+  -a                          Make .png plots and .txt files for all available
+                              data under directory in -d (like -d /data/geodesy)
+                              If one or more stations are given in -s, like
+                              -s E or -s VIGH, only data for those stations are
+                              plotted and saved in -o directory.
+                              If -a is present, -p is ignored (for too many 
+                              wind would be open).
+  -h                          print this text'''
 
 
 import numpy as np
@@ -56,7 +63,9 @@ if sys.argv[1:] == []: # Print help text and exit if no command line options
     print(help_text)
     raise SystemExit
 
-optlist = getopt.getopt(sys.argv[1:], 't:s:d:o:phx')[0]
+optlist = getopt.getopt(sys.argv[1:], 't:s:d:o:phxa')[0]
+
+raise SystemExit
 
 for opt, val in optlist:
     if opt == '-h':  # Print help text and exit if there is '-h' among options
