@@ -1,0 +1,13 @@
+%run plot_multcorr_all.py -s I -d /data/geodesy/ -o pltI -p -x -a
+
+--------------------------------------------------------------------
+
+ValueError                                Traceback (most recent call last)
+/home/benkev/vgos/plot_multcorr_all.py in <module>()
+    436             x_text = xmin + 0.73*(xmax - xmin)
+    437             y_text = ymin + 0.87*(ymax - ymin)
+--> 438             icol = int(R_mult[ibp]*255)
+    439 
+    440             ax.plot(x_marker, y_marker, marker='s', markersize=20, \
+
+ValueError: cannot convert float NaN to integer
