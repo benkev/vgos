@@ -297,6 +297,14 @@ for iddir in range(n_datadir):
         for ix in range(nbandpol):
             delps[ix,:] = dat[ix]['delay_ps']
 
+        if not np.all(np.isfinite(delps)):
+            print('WARNING: Corrupt data for station ' + station[istn] + \
+                  ' on path ' + datadir[iddir])
+            fwarn.write('WARNING: Corrupt data for station ' + station[istn] + \
+                        ' on path ' + datadir[iddir] + '\n')
+            continue  # =================================================== >>>
+            
+
         #
         # Assume time data the same for all bands. Use time from AX (ie 0-th).
         #
