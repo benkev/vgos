@@ -69,3 +69,27 @@ def mult_corr(Rxx_full, bp_good=None):
     R_mult = np.sqrt(R_mult2)
     
     return R_mult
+
+
+
+def write_xcorrmx(fout):
+    '''
+    Save the cross-correlation matrix in file fout.
+    '''
+
+    wrl2_1 = '#\n# Cross-Correlation Matrix. Station ' + station + \
+             ', Exp. ' + exn + ', Code ' + exc + '\n#\n'
+    wrl2_2 = 14*' '
+    for ibp in range(nbp):         # nbp = 8 bandpols
+        wrl2_2 += '    ' + bp_sym[ibp] + '  '
+
+    fout.write(wrl2_1)
+    fout.write(wrl2_2 + '\n')
+
+    for iy in range(nbandpol):
+        wrl = 11*' ' + bp_sym[iy] + ' '
+        for ix in range(nbandpol):
+            wrl += ' {:6.3f} '.format(Rxx_full[iy,ix])
+        fout.write(wrl + '\n')
+    fout.write('\n')
+

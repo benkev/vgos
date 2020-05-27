@@ -31,6 +31,7 @@ import numpy as np
 import numpy.linalg as la
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
+import phasecal
 from phasecal import mult_corr
 import os, sys, glob, copy
 import itertools as itr
@@ -259,15 +260,15 @@ for iddir in range(n_datadir):
         exn = re.findall('(\.[A-y]{2}[0-9]{4}\.|\.[A-y][0-9]{5}\.)', fnames[0])
         exn = exn[0][1:-1]
 
-        outname = outdir + 'bandpol_st_' + station[istn] + '_' + exc + '_' + \
-                  exn + '_ABCD_XY'
-        figname = outname + '.png'
-        txtname = outname + '.txt'
 
-        outname2 = outdir + 'xcorr_matrix_st_' + station + '_' + exc + '_' + \
-                   exn + '_ABCD_XY'
-        figname2 = outname2 + '.png'
+        st_exc_exn = station[istn] + '_' + exc + '_' + exn
+        fig_bandpol = outdir + 'bandpol_' + st_exc_exn + '_all_bandpols.png'
+        txt_rmult =   outdir + 'r_multi_' + st_exc_exn + '_all_bandpols.txt'
 
+        txt_median =  outdir + 'rxx_med_' + st_exc_exn + '_all_bandpols.txt'
+
+        fig_xcorrmx = outdir + 'xcorrmx_' + st_exc_exn + '_allbp.png'
+ 
         #
         # Read all the 8 channel data into the array list datlist.
         # In case the datasets have different lengths, find the minimum length
@@ -297,12 +298,15 @@ for iddir in range(n_datadir):
         for ix in range(nbandpol):
             delps[ix,:] = dat[ix]['delay_ps']
 
-        if not np.all(np.isfinite(delps)):
-            print('WARNING: Corrupt data for station ' + station[istn] + \
-                  ' on path ' + datadir[iddir])
-            fwarn.write('WARNING: Corrupt data for station ' + station[istn] + \
-                        ' on path ' + datadir[iddir] + '\n')
-            continue  # =================================================== >>>
+
+        # if not np.all(np.isfinite(delps)):
+        #     print('WARNING: Corrupt data for station ' + station[istn] + \
+        #           ' on path ' + datadir[iddir])
+        #     fwarn.write('WARNING: Corrupt data for station ' + \
+        #             station[istn] +  ' on path ' + datadir[iddir] + '\n')
+        #     raise SystemExit
+
+        #     continue  # ================================================= >>>
             
 
         #
@@ -337,41 +341,61 @@ for iddir in range(n_datadir):
 
 
         #
-        # Compute nbandpol X nbandpol correlation matrix of rows 
+        # Compute [nbandpol X nbandpol] correlation matrix of rows 
         # of delps[nbandpol,:]
         #
         Rxx_full = np.corrcoef(delps)
 
         #
+        # Assume all the bandpols are good
+        #
+        bp_good = [i for i in range(nbandpol)]
+        bp_bad =  []
+
+
+        #
         # Compute medians for the rows (or columns) of the correlation matrix
         # Low median points at too weak correlation of a selected bandpol with
         # other bandpols.
+        # Also, put indices of the rows/columns containing all NaN-s (or other 
+        # non-finites) to bp_bad list and remove them from bp_good list.
         #
-        # Rxx_full_0 = np.copy(Rxx_full)
         corr_median = np.zeros(nbandpol)
-        for i in range(nbandpol):
-            # Rxx_full_0[i,i] = 0.   # Replace ones at the diagonal with zeros
-            # Extract i-th row without diagonal element 1
-            row_Rxx = np.concatenate((Rxx_full[i,:i], Rxx_full[i,i+1:]))       
-            corr_median[i] = np.median(row_Rxx)
+        for ibp in range(nbandpol):
+            row_Rxx = np.concatenate((Rxx_full[ibp,:ibp], Rxx_full[ibp,ibp+1:]))
+            rfin = np.isfinite(row_Rxx)
+            row_Rxx_fin = row_Rxx[rfin]   # Leave only finite elements
+            if len(row_Rxx_fin) > 0:      # At least one in row is finite
+                corr_median[ibp] = np.median(row_Rxx_fin)
+            else: # All elements of row are NaNs: ibp-th row and column are bad
+-                corr_median[ibp] = np.NaN
+                bp_bad.append(ibp)
+                bp_good.remove(ibp)
+
+        #
+        # Write log file with median values
+        #
+        fmedi = open(txtmed, 'w')
 
 
         #
-        # Compute the multiple correlation coefficients for every bandpol
+        # Compute the multiple correlation coefficients for every bandpol.
+        # Write them in log file
         #          
-        R_mult = mult_corr(Rxx_full)
+        R_mult = mult_corr(Rxx_full, bp_good)
         R_percent = 100.*R_mult
+
 
         #
         # Write log file with multcorr values
         #
-        fout = open(txtname, 'w')
+        frmul = open(txt_rmult, 'w')
 
         wrl1_1 = '#\n# Mulpiple Correlation Coefficients (%). Station ' + \
                  station + ', Exp. ' + exn + ', Code ' + exc + '\n#\n'
         wrl1_2 = '#'
 
-        fout.write(wrl1_1 + '\n')
+        frmul.write(wrl1_1 + '\n')
 
         wrline1 = '# ' + exc + ' ' + exn + ' '
         for ibp in range(nbp):         # nbp = 8 bandpols
@@ -379,29 +403,54 @@ for iddir in range(n_datadir):
 
         wrline2 = 15*' '
         for ibp in range(nbandpol):
-            wrline2 += ' {:5.2f}  '.format(R_percent[ibp])
+            if ibp in bp_good:
+                wrline2 += ' {:5.2f}  '.format(R_percent[ibp])
+            else:
+                wrline2 += 8*' '
 
-        fout.write(wrline1 + '\n')
-        fout.write(wrline2 + '\n\n')
+        frmul.write(wrline1 + '\n')
+        frmul.write(wrline2 + '\n\n')
+
+
+        # #
+        # # Successively remove the bandpols with medians of the rows (or 
+        # # columns) of the correlation matrix Rxx_full below the threshold for
+        # # medians (if there are any)
+        # #
+        # idxmin_R = np.argmin(R_percent)  # Index of the minimum multiple correlation
+
+        # while R_pc_good[idxmin_R] < threshold_0:
+        #     if nbp_good <= 4: 
+        #         break # ========================================================== >>>
+        #     R_mult_good[idxmin_R] = np.NaN
+        #     bp_bad.append(idxmin_R)
+        #     bp_good.remove(idxmin_R)
+        #     nbp_good = len(bp_good)
+        #     # Compute multiple correlation coefficients for the rest of bandpols    
+        #     R_mult_good[bp_good] = mult_corr(Rxx_full, bp_good)
+        #     R_pc_good = 100.*R_mult_good
+        #     # Write a line with the new  mult-corr values for the rest of bandpols
+        #     wrline2 = 13*' '
+        #     for ibp in range(nbandpol):
+        #         if ibp in bp_good:
+        #             wrline2 += ' {:7.4f}  '.format(R_pc_good[ibp])
+        #         else:
+        #             wrline2 += 10*' '
+        #     frmul.write(wrline2 + '\n')
+        #     idxmin_R = np.nanargmin(R_pc_good)
+
+
+
+
+
+
+
 
         #
-        # Save the cross-correlation matrix in file
+        # Save the cross-correlation matrix in R_mult file
         #
-        wrl2_1 = '#\n# Cross-Correlation Matrix. Station ' + station + \
-                 ', Exp. ' + exn + ', Code ' + exc + '\n#\n'
-        wrl2_2 = 14*' '
-        for ibp in range(nbp):         # nbp = 8 bandpols
-            wrl2_2 += '    ' + bp_sym[ibp] + '  '
+        write_xcorrmx(frmul)
 
-        fout.write(wrl2_1)
-        fout.write(wrl2_2 + '\n')
-
-        for iy in range(nbandpol):
-            wrl = 11*' ' + bp_sym[iy] + ' '
-            for ix in range(nbandpol):
-                wrl += ' {:6.3f} '.format(Rxx_full[iy,ix])
-            fout.write(wrl + '\n')
-        fout.write('\n')
 
         #
         # Save the cross-correlation medians in file
@@ -410,10 +459,12 @@ for iddir in range(n_datadir):
         for ix in range(nbandpol):
             wrl += ' {:6.3f} '.format(corr_median[ix])
 
-        fout.write(wrl + '\n\n')
+        frmul.write(wrl + '\n\n')
 
-        fout.close()
 
+
+        frmul.close()
+        fmedi.close()
 
 
         #
@@ -470,7 +521,7 @@ for iddir in range(n_datadir):
         fig.tight_layout()
 
         fig.subplots_adjust(top=0.94)
-        fig.savefig(figname)
+        fig.savefig(fig_bandpol)
 
         if plot_xcorrmx:
             #
@@ -503,7 +554,7 @@ for iddir in range(n_datadir):
             fig2.text(0.1, 0.95, 'Cross-Correlation Matrix. Station ' + \
                       station + ', Exp. ' + exn + ', Code ' + exc)
 
-            fig2.savefig(figname2)
+            fig2.savefig(fig_xcorrmx)
 
 
         if plot_graph:
