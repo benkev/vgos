@@ -32,7 +32,7 @@ import numpy.linalg as la
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 import phasecal
-from phasecal import mult_corr
+from phasecal import mult_corr, write_xcorrmx
 import os, sys, glob, copy
 import itertools as itr
 import re
@@ -46,7 +46,7 @@ threshold_median = 0.5
 
 all_stations = ('E', 'G', 'H', 'I', 'V', 'Y') 
 bp_sym = ['AX', 'AY', 'BX', 'BY', 'CX', 'CY', 'DX', 'DY']
-nbp = len(bp_sym)
+nbp_sym = len(bp_sym)
 bp_patt = re.compile(r'[A-D][X-Y]')  # Regex pattern to catch bandpols, like AX
 
 fields = [('year', 'i2'),  ('doy', 'i2'),
@@ -267,7 +267,7 @@ for iddir in range(n_datadir):
 
         txt_median =  outdir + 'rxx_med_' + st_exc_exn + '_all_bandpols.txt'
 
-        fig_xcorrmx = outdir + 'xcorrmx_' + st_exc_exn + '_allbp.png'
+        fig_xcorrmx = outdir + 'xcorrmx_' + st_exc_exn + '.png'
  
         #
         # Read all the 8 channel data into the array list datlist.
@@ -368,15 +368,15 @@ for iddir in range(n_datadir):
             if len(row_Rxx_fin) > 0:      # At least one in row is finite
                 corr_median[ibp] = np.median(row_Rxx_fin)
             else: # All elements of row are NaNs: ibp-th row and column are bad
--                corr_median[ibp] = np.NaN
+                corr_median[ibp] = np.NaN
                 bp_bad.append(ibp)
                 bp_good.remove(ibp)
 
         #
-        # Write log file with median values
+        # Log files
         #
-        fmedi = open(txtmed, 'w')
-
+        fmedi = open(txt_median, 'w')  # With median values
+        frmul = open(txt_rmult, 'w')   # With R_mult values
 
         #
         # Compute the multiple correlation coefficients for every bandpol.
@@ -385,12 +385,6 @@ for iddir in range(n_datadir):
         R_mult = mult_corr(Rxx_full, bp_good)
         R_percent = 100.*R_mult
 
-
-        #
-        # Write log file with multcorr values
-        #
-        frmul = open(txt_rmult, 'w')
-
         wrl1_1 = '#\n# Mulpiple Correlation Coefficients (%). Station ' + \
                  station + ', Exp. ' + exn + ', Code ' + exc + '\n#\n'
         wrl1_2 = '#'
@@ -398,7 +392,7 @@ for iddir in range(n_datadir):
         frmul.write(wrl1_1 + '\n')
 
         wrline1 = '# ' + exc + ' ' + exn + ' '
-        for ibp in range(nbp):         # nbp = 8 bandpols
+        for ibp in range(nbp_sym):         # nbp_sym = 8 bandpols
             wrline1 += '    ' + bp_sym[ibp] + '  '
 
         wrline2 = 15*' '
@@ -425,7 +419,7 @@ for iddir in range(n_datadir):
         #     R_mult_good[idxmin_R] = np.NaN
         #     bp_bad.append(idxmin_R)
         #     bp_good.remove(idxmin_R)
-        #     nbp_good = len(bp_good)
+        #     nbpn_good = len(bp_good)
         #     # Compute multiple correlation coefficients for the rest of bandpols    
         #     R_mult_good[bp_good] = mult_corr(Rxx_full, bp_good)
         #     R_pc_good = 100.*R_mult_good
@@ -449,7 +443,7 @@ for iddir in range(n_datadir):
         #
         # Save the cross-correlation matrix in R_mult file
         #
-        write_xcorrmx(frmul)
+        write_xcorrmx(frmul, Rxx_full, station, exn, exc, bp_sym)
 
 
         #
@@ -479,8 +473,8 @@ for iddir in range(n_datadir):
 
         iplot = 0
         for ibp in range(nbandpol):
-            ip = ibp % 2         # 0 1 0 1 0 1 0 1
-            ib = ibp // 2        # 0 0 1 1 2 2 3 3
+            ip = ibp % 2         # 0 1 0 1 0 1 0 1 0 1 0 1 ...
+            ib = ibp // 2        # 0 0 1 1 2 2 3 3 0 0 1 1 ...
             iplot = iplot + 1   # subplot index starts from 1
 
             band_pol = strband[ib] + ':' + strpol[ip]

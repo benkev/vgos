@@ -72,15 +72,20 @@ def mult_corr(Rxx_full, bp_good=None):
 
 
 
-def write_xcorrmx(fout):
+def write_xcorrmx(fout, Rxx_full, station, experiment_number, experiment_code, \
+                  bp_sym, ):
     '''
     Save the cross-correlation matrix in file fout.
     '''
 
+    nbandpol = np.size(Rxx_full,0)
+    nbp_sym = len(bp_sym)
+
     wrl2_1 = '#\n# Cross-Correlation Matrix. Station ' + station + \
-             ', Exp. ' + exn + ', Code ' + exc + '\n#\n'
+             ', Exp. ' + experiment_number + ', Code ' + experiment_code + \
+             '\n#\n'
     wrl2_2 = 14*' '
-    for ibp in range(nbp):         # nbp = 8 bandpols
+    for ibp in range(nbp_sym):         # nbp_sym = 8 bandpols
         wrl2_2 += '    ' + bp_sym[ibp] + '  '
 
     fout.write(wrl2_1)
