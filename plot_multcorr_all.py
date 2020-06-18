@@ -380,11 +380,13 @@ for iddir in range(n_datadir):
 
         #
         # Compute the multiple correlation coefficients for every bandpol.
-        # Write them in log file
-        #          
-        R_mult = mult_corr(Rxx_full, bp_good)
+        #
+        R_mult = mult_corr(Rxx_full, bp_good, bad_nans=True)
         R_percent = 100.*R_mult
 
+        #
+        # Save the multiple correlation coefficients in log file
+        #          
         wrl1_1 = '#\n# Mulpiple Correlation Coefficients (%). Station ' + \
                  station + ', Exp. ' + exn + ', Code ' + exc + '\n#\n'
         wrl1_2 = '#'
@@ -482,28 +484,29 @@ for iddir in range(n_datadir):
             ax = plt.subplot(4, 2, iplot)
             ax.plot(t_hr, delps[ibp,:], 'b.', markersize=3, clip_on=False)
 
-            xmin, xmax = ax.get_xlim()
-            ymin, ymax = ax.get_ylim()
-            x_marker = xmin + 0.93*(xmax - xmin)
-            y_marker = ymin + 0.9*(ymax - ymin)
-            x_text = xmin + 0.73*(xmax - xmin)
-            y_text = ymin + 0.87*(ymax - ymin)
-            icol = int(R_mult[ibp]*255)
+            if not np.isnan(R_mult[ibp]):
+                xmin, xmax = ax.get_xlim()
+                ymin, ymax = ax.get_ylim()
+                x_marker = xmin + 0.93*(xmax - xmin)
+                y_marker = ymin + 0.9*(ymax - ymin)
+                x_text = xmin + 0.73*(xmax - xmin)
+                y_text = ymin + 0.87*(ymax - ymin)
+                icol = int(R_mult[ibp]*255)
 
-            ax.plot(x_marker, y_marker, marker='s', markersize=20, \
-                     markerfacecolor=rYlGn.colors[icol])
-            ax.text(x_text, y_text, '%5.2f' % R_percent[ibp])
+                ax.plot(x_marker, y_marker, marker='s', markersize=20, \
+                         markerfacecolor=rYlGn.colors[icol])
+                ax.text(x_text, y_text, '%5.2f' % R_percent[ibp])
 
-            if (R_percent[ibp] < threshold_mulcor) or \
-               (corr_median[ibp] < threshold_median):
-                x_text2 = xmin + 0.05*(xmax - xmin)
-                #x_text3 = xmin + 0.30*(xmax - xmin)
-                #y_text2 = ymin + 0.87*(ymax - ymin)
-                ax.text(x_text2, y_text, 'Rejected', color='r')
+                if (R_percent[ibp] < threshold_mulcor) or \
+                   (corr_median[ibp] < threshold_median):
+                    x_text2 = xmin + 0.05*(xmax - xmin)
+                    #x_text3 = xmin + 0.30*(xmax - xmin)
+                    #y_text2 = ymin + 0.87*(ymax - ymin)
+                    ax.text(x_text2, y_text, 'Rejected', color='r')
 
-            # Print correlation median
-            x_text3 = xmin + 0.30*(xmax - xmin)
-            ax.text(x_text3, y_text, '%5.2f' % corr_median[ibp], color='k')
+                # Print in axes correlation median
+                x_text3 = xmin + 0.30*(xmax - xmin)
+                ax.text(x_text3, y_text, '%5.2f' % corr_median[ibp], color='k')
 
 
             ax.set_ylabel(band_pol + " delay (ps)")
