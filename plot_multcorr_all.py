@@ -363,8 +363,8 @@ for iddir in range(n_datadir):
         corr_median = np.zeros(nbandpol)
         for ibp in range(nbandpol):
             row_Rxx = np.concatenate((Rxx_full[ibp,:ibp], Rxx_full[ibp,ibp+1:]))
-            rfin = np.isfinite(row_Rxx)
-            row_Rxx_fin = row_Rxx[rfin]   # Leave only finite elements
+            ixrfin = np.isfinite(row_Rxx)
+            row_Rxx_fin = row_Rxx[ixrfin]   # Leave only finite elements
             if len(row_Rxx_fin) > 0:      # At least one in row is finite
                 corr_median[ibp] = np.median(row_Rxx_fin)
             else: # All elements of row are NaNs: ibp-th row and column are bad

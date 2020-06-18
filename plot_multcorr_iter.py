@@ -310,6 +310,8 @@ bp_bad =  []
 
 R_mult = mult_corr(Rxx_full, bp_good)
 
+print('len(R_mult) = ', len(R_mult))
+
 R_percent = 100.*R_mult
 R_list = [R_percent]
 R_pc_good = np.copy(R_percent)
