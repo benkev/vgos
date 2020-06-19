@@ -32,7 +32,7 @@ import numpy.linalg as la
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 import phasecal
-from phasecal import mult_corr, write_xcorrmx, write_title
+from phasecal import mult_corr, write_xcorrmx, write_title, write_numbers
 import os, sys, glob, copy
 import itertools as itr
 import re
@@ -390,26 +390,18 @@ for iddir in range(n_datadir):
         write_title(frmul, 'Mulpiple Correlation Coefficients (%).', \
                     station, exn, exc, bp_sym)
 
-        # wrl1_1 = '#\n# Mulpiple Correlation Coefficients (%). Station ' + \
-        #          station + ', Exp. ' + exn + ', Code ' + exc + '\n#\n'
-        # wrl1_2 = '#'
+        #
+        # Save the cross-correlation matrix in R_mult file
+        #
+        write_xcorrmx(frmul, 'Cross-Correlation Matrix.', Rxx_full, bp_good, \
+                      station, exn, exc, bp_sym)
 
-        # frmul.write(wrl1_1 + '\n')
+        write_numbers(frmul, 13*' ', R_percent, bp_good)
 
-        # wrline1 = '# ' + exc + ' ' + exn + ' '
-        # for ibp in range(nbp_sym):         # nbp_sym = 8 bandpols
-        #     wrline1 += '    ' + bp_sym[ibp] + '  '
-
-        # frmul.write(wrline1 + '\n')
-
-        wrline2 = 15*' '
-        for ibp in range(nbandpol):
-            if ibp in bp_good:
-                wrline2 += ' {:5.2f}  '.format(R_percent[ibp])
-            else:
-                wrline2 += 8*' '
-
-        frmul.write(wrline2 + '\n\n')
+        #
+        # Save the cross-correlation medians in file
+        #
+        write_numbers(frmul, '      Medians ', corr_median, bp_good)
 
 
         #
@@ -419,15 +411,15 @@ for iddir in range(n_datadir):
                     station, exn, exc, bp_sym)
 
         #
+        # Save the cross-correlation matrix in R_mult file
+        #
+        write_xcorrmx(fmedi, 'Cross-Correlation Matrix.', Rxx_full, bp_good, \
+                      station, exn, exc, bp_sym)
+
+        #
         # Write a line with the median values 
         #
-        wrline3 = 13*' '
-        for ibp in range(nbandpol):
-            if ibp in bp_good:
-                wrline3 += ' {:7.4f}  '.format(corr_median[ibp])
-            else:
-                wrline3 += 10*' '
-        fmedi.write(wrline3 + '\n')
+        write_numbers(fmedi, 13*' ', corr_median, bp_good)
 
 
         #
@@ -477,43 +469,24 @@ for iddir in range(n_datadir):
             # Write a line with the new  mult-corr values 
             # for the rest of bandpols
             #
-            wrline2 = 13*' '
-            for ibp in range(nbandpol):
-                if ibp in bp_good:
-                    wrline2 += ' {:7.4f}  '.format(R_pc_good[ibp])
-                else:
-                    wrline2 += 10*' '
-            frmul.write(wrline2 + '\n')
-
+            write_numbers(frmul, 13*' ', R_pc_good, bp_good)
 
             #
             # Write a line with the new median values 
             # for the rest of bandpols
             #
-            wrline3 = 13*' '
-            for ibp in range(nbandpol):
-                if ibp in bp_good:
-                    wrline3 += ' {:7.4f}  '.format(corr_med_good[ibp])
-                else:
-                    wrline3 += 10*' '
-            fmedi.write(wrline3 + '\n')
+            write_numbers(fmedi, 13*' ', corr_med_good, bp_good)
 
 
+        # #
+        # # Save the cross-correlation matrix in R_mult file
+        # #
+        # write_xcorrmx(frmul, Rxx_full, bp_good, station, exn, exc, bp_sym)
 
-        #
-        # Save the cross-correlation matrix in R_mult file
-        #
-        write_xcorrmx(frmul, Rxx_full, station, exn, exc, bp_sym)
-
-        #
-        # Save the cross-correlation medians in file
-        #
-        wrl = '      Medians '
-        for ix in range(nbandpol):
-            wrl += ' {:6.3f} '.format(corr_median[ix])
-
-        frmul.write(wrl + '\n\n')
-
+        # #
+        # # Save the cross-correlation medians in file
+        # #
+        # write_numbers(frmul, '      Medians ', corr_median, bp_good)
 
 
 

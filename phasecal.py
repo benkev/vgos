@@ -5,6 +5,7 @@ Module providing some useful functions for the phase calibration software.
 
 '''
 
+import copy
 import numpy as np
 import numpy.linalg as la
 from functools import reduce
@@ -87,8 +88,8 @@ def mult_corr(Rxx_full, bp_good=None, bad_nans=False):
 
 
 
-def write_xcorrmx(fout, Rxx_full, station, experiment_number, experiment_code, \
-                  bp_sym):
+def write_xcorrmx(fout, title, Rxx_full, bp_good, station, \
+                  experiment_number, experiment_code, bp_sym):
     '''
     Save the cross-correlation matrix in file fout.
     '''
@@ -96,7 +97,7 @@ def write_xcorrmx(fout, Rxx_full, station, experiment_number, experiment_code, \
     nbandpol = np.size(Rxx_full,0)
     nbp_sym = len(bp_sym)
 
-    wrl2_1 = '#\n# Cross-Correlation Matrix. Station ' + station + \
+    wrl2_1 = '#\n# ' + title + ' Station ' + station + \
              ', Exp. ' + experiment_number + ', Code ' + experiment_code + \
              '\n#\n'
     wrl2_2 = 14*' '
@@ -109,9 +110,30 @@ def write_xcorrmx(fout, Rxx_full, station, experiment_number, experiment_code, \
     for iy in range(nbandpol):
         wrl = 11*' ' + bp_sym[iy] + ' '
         for ix in range(nbandpol):
-            wrl += ' {:6.3f} '.format(Rxx_full[iy,ix])
+            if (iy in bp_good) and (ix in bp_good):
+                wrl += ' {:6.3f} '.format(Rxx_full[iy,ix])
+            else:
+                wrl += 9*' '
         fout.write(wrl + '\n')
     fout.write('\n')
+
+
+def write_numbers(fout, prefix, numbers, bp_good):
+    '''
+    Write a line of numbers at the positions at bp_good, and blanks at others.
+    The numbers can be multiple correlations or correlation medians and 
+    they are supposed to be printed just at the locations of the 
+    cross-correlation matrix columns.
+    '''
+    nbandpol = len(numbers)
+    wrl = copy.copy(prefix)   # 13*' '
+    for ibp in range(nbandpol):
+        if ibp in bp_good:
+            wrl += ' {:7.4f}  '.format(numbers[ibp])
+        else:
+            wrl += 10*' '
+    fout.write(wrl + '\n')
+
 
 
 
