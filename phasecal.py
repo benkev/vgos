@@ -113,3 +113,29 @@ def write_xcorrmx(fout, Rxx_full, station, experiment_number, experiment_code, \
         fout.write(wrl + '\n')
     fout.write('\n')
 
+
+
+def write_title(fout, title, station, experiment_number, experiment_code, \
+                  bp_sym):
+    '''
+    Write title in file fout.
+    '''
+
+    nbp_sym = len(bp_sym)
+    wrl1_1 = '#\n# ' + title + ' Station ' + station + \
+             ', Exp. ' + experiment_number + \
+             ', Code ' + experiment_code + '\n#\n'
+    wrl1_2 = '#'
+
+    fout.write(wrl1_1 + '\n')
+
+    wrline1 = '# ' + experiment_code + ' ' + experiment_number + ' '
+    for ibp in range(nbp_sym):         # nbp_sym = 8 bandpols
+        wrline1 += '    ' + bp_sym[ibp] + '  '
+
+    fout.write(wrline1 + '\n')
+
+
+
+
+

@@ -32,7 +32,7 @@ import numpy.linalg as la
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 import phasecal
-from phasecal import mult_corr, write_xcorrmx
+from phasecal import mult_corr, write_xcorrmx, write_title
 import os, sys, glob, copy
 import itertools as itr
 import re
@@ -365,7 +365,7 @@ for iddir in range(n_datadir):
             row_Rxx = np.concatenate((Rxx_full[ibp,:ibp], Rxx_full[ibp,ibp+1:]))
             ixrfin = np.isfinite(row_Rxx)
             row_Rxx_fin = row_Rxx[ixrfin]   # Leave only finite elements
-            if len(row_Rxx_fin) > 0:      # At least one in row is finite
+            if len(row_Rxx_fin) > 0:        # At least one in row is finite
                 corr_median[ibp] = np.median(row_Rxx_fin)
             else: # All elements of row are NaNs: ibp-th row and column are bad
                 corr_median[ibp] = np.NaN
@@ -386,16 +386,21 @@ for iddir in range(n_datadir):
 
         #
         # Save the multiple correlation coefficients in log file
-        #          
-        wrl1_1 = '#\n# Mulpiple Correlation Coefficients (%). Station ' + \
-                 station + ', Exp. ' + exn + ', Code ' + exc + '\n#\n'
-        wrl1_2 = '#'
+        #
+        write_title(frmul, 'Mulpiple Correlation Coefficients (%).', \
+                    station, exn, exc, bp_sym)
 
-        frmul.write(wrl1_1 + '\n')
+        # wrl1_1 = '#\n# Mulpiple Correlation Coefficients (%). Station ' + \
+        #          station + ', Exp. ' + exn + ', Code ' + exc + '\n#\n'
+        # wrl1_2 = '#'
 
-        wrline1 = '# ' + exc + ' ' + exn + ' '
-        for ibp in range(nbp_sym):         # nbp_sym = 8 bandpols
-            wrline1 += '    ' + bp_sym[ibp] + '  '
+        # frmul.write(wrl1_1 + '\n')
+
+        # wrline1 = '# ' + exc + ' ' + exn + ' '
+        # for ibp in range(nbp_sym):         # nbp_sym = 8 bandpols
+        #     wrline1 += '    ' + bp_sym[ibp] + '  '
+
+        # frmul.write(wrline1 + '\n')
 
         wrline2 = 15*' '
         for ibp in range(nbandpol):
@@ -404,41 +409,94 @@ for iddir in range(n_datadir):
             else:
                 wrline2 += 8*' '
 
-        frmul.write(wrline1 + '\n')
         frmul.write(wrline2 + '\n\n')
 
 
-        # #
-        # # Successively remove the bandpols with medians of the rows (or 
-        # # columns) of the correlation matrix Rxx_full below the threshold for
-        # # medians (if there are any)
-        # #
-        # idxmin_R = np.argmin(R_percent)  # Index of the minimum multiple correlation
+        #
+        # Save the row medians in log file
+        #
+        write_title(fmedi, 'Medians of Correlation Matrix Rows.', \
+                    station, exn, exc, bp_sym)
 
-        # while R_pc_good[idxmin_R] < threshold_0:
-        #     if nbp_good <= 4: 
-        #         break # ========================================================== >>>
-        #     R_mult_good[idxmin_R] = np.NaN
-        #     bp_bad.append(idxmin_R)
-        #     bp_good.remove(idxmin_R)
-        #     nbpn_good = len(bp_good)
-        #     # Compute multiple correlation coefficients for the rest of bandpols    
-        #     R_mult_good[bp_good] = mult_corr(Rxx_full, bp_good)
-        #     R_pc_good = 100.*R_mult_good
-        #     # Write a line with the new  mult-corr values for the rest of bandpols
-        #     wrline2 = 13*' '
-        #     for ibp in range(nbandpol):
-        #         if ibp in bp_good:
-        #             wrline2 += ' {:7.4f}  '.format(R_pc_good[ibp])
-        #         else:
-        #             wrline2 += 10*' '
-        #     frmul.write(wrline2 + '\n')
-        #     idxmin_R = np.nanargmin(R_pc_good)
+        #
+        # Write a line with the median values 
+        #
+        wrline3 = 13*' '
+        for ibp in range(nbandpol):
+            if ibp in bp_good:
+                wrline3 += ' {:7.4f}  '.format(corr_median[ibp])
+            else:
+                wrline3 += 10*' '
+        fmedi.write(wrline3 + '\n')
 
 
+        #
+        # Successively remove the bandpols with medians of the rows (or 
+        # columns) of the correlation matrix Rxx_full below the threshold for
+        # medians (if there are any)
+        #
+        R_list = [R_percent]
+        R_pc_good = np.copy(R_percent)
+        R_mult_good = np.copy(R_mult)
+        corr_med_good = np.copy(corr_median)
+        nbp_good = nbandpol
+
+        #
+        # Index of row with minimum median
+        #
+        idx_minmed = np.nanargmin(corr_median)
+
+        while corr_median[idx_minmed] < threshold_median:
+            if nbp_good <= 4: 
+                break # ================================================== >>>
+            R_mult_good[idx_minmed] = np.NaN
+            bp_bad.append(idx_minmed)
+            bp_good.remove(idx_minmed)
+            nbp_good = len(bp_good)
+
+            #
+            # Compute row medians for the rest of bandpols
+            #
+            corr_med_good = np.zeros(nbandpol)
+            corr_med_good[:] = np.NaN
+
+            for ibp in bp_good:
+                row_Rxx_list = []
+                for ix in range(nbandpol):
+                    if (ix in bp_good) and (ix != ibp):
+                        row_Rxx_list.append(Rxx_full[ibp,ix])
+                row_Rxx = np.array(row_Rxx_list)
+                corr_med_good[ibp] = np.median(row_Rxx)
+            
+            idx_minmed = np.nanargmin(corr_med_good)
+
+            R_mult_good[bp_good] = mult_corr(Rxx_full, bp_good, bad_nans=True)
+            R_pc_good = 100.*R_mult_good
+
+            #
+            # Write a line with the new  mult-corr values 
+            # for the rest of bandpols
+            #
+            wrline2 = 13*' '
+            for ibp in range(nbandpol):
+                if ibp in bp_good:
+                    wrline2 += ' {:7.4f}  '.format(R_pc_good[ibp])
+                else:
+                    wrline2 += 10*' '
+            frmul.write(wrline2 + '\n')
 
 
-
+            #
+            # Write a line with the new median values 
+            # for the rest of bandpols
+            #
+            wrline3 = 13*' '
+            for ibp in range(nbandpol):
+                if ibp in bp_good:
+                    wrline3 += ' {:7.4f}  '.format(corr_med_good[ibp])
+                else:
+                    wrline3 += 10*' '
+            fmedi.write(wrline3 + '\n')
 
 
 
@@ -446,7 +504,6 @@ for iddir in range(n_datadir):
         # Save the cross-correlation matrix in R_mult file
         #
         write_xcorrmx(frmul, Rxx_full, station, exn, exc, bp_sym)
-
 
         #
         # Save the cross-correlation medians in file
@@ -456,6 +513,10 @@ for iddir in range(n_datadir):
             wrl += ' {:6.3f} '.format(corr_median[ix])
 
         frmul.write(wrl + '\n\n')
+
+
+
+
 
 
 
