@@ -219,6 +219,9 @@ rYlGn = ListedColormap(cmYlGn(np.linspace(0.0, 0.6, 256)), name='rYlGn')
 cmhot_r = plt.cm.get_cmap('hot_r')
 hotr = ListedColormap(cmhot_r(np.linspace(0.0, 0.7, 256)), name='hotr')
 
+cmjet = plt.cm.get_cmap('jet')
+lcmjet = ListedColormap(cmjet(np.linspace(0.1, 0.9, 256)), name='lcmjet')
+
 
 
 #
@@ -264,12 +267,9 @@ for iddir in range(n_datadir):
 
 
         st_exc_exn = station[istn] + '_' + exc + '_' + exn
-        fig_bandpol = outdir + 'bandpol_' + st_exc_exn + '_all_bandpols.png'
-        txt_rmult =   outdir + 'r_multi_' + st_exc_exn + '_all_bandpols.txt'
-
-        txt_median =  outdir + 'rxx_med_' + st_exc_exn + '_all_bandpols.txt'
-
+        fig_bandpol = outdir + 'bandpol_' + st_exc_exn + '.png'
         fig_xcorrmx = outdir + 'xcorrmx_' + st_exc_exn + '.png'
+        txt_bandpol = outdir + 'bandpol_' + st_exc_exn + '.txt'
  
         #
         # Read all the 8 channel data into the array list datlist.
@@ -378,7 +378,7 @@ for iddir in range(n_datadir):
         # Log files
         #
         # fmedi = open(txt_median, 'w')  # With median values
-        frmul = open(txt_rmult, 'w')   # With R_mult values
+        frmul = open(txt_bandpol, 'w')   # With R_mult values
 
         #
         # Compute the multiple correlation coefficients for every bandpol.
@@ -391,7 +391,7 @@ for iddir in range(n_datadir):
         #
         write_title(frmul, 'Iterative Selection of Good Band-Pol Channels.', \
                     station, exn, exc, bp_sym)
-        write_xcorrmx(frmul, 30*' ' + 'Cross-Correlation Matrix.', \
+        write_xcorrmx(frmul, 30*' ' + 'Cross-Correlation Matrix', \
                       Rxx_full, bp_good, station, exn, exc, bp_sym)
         write_numbers(frmul, '       Median ', corr_median, bp_good)
         write_numbers(frmul, '   Multi-Corr ', R_mult, bp_good)
@@ -413,8 +413,8 @@ for iddir in range(n_datadir):
 
         idx_minmed = np.nanargmin(corr_median) # Index of row with min. median
 
-        while corr_median[idx_minmed] < threshold_median:
-            if nbp_good <= 4: 
+        while corr_med_good[idx_minmed] < threshold_median:
+            if nbp_good <= 2: 
                 break # ================================================== >>>
             R_mult_good[idx_minmed] = np.NaN
             bp_bad.append(idx_minmed)
@@ -442,7 +442,8 @@ for iddir in range(n_datadir):
             R_mult_good = mult_corr(Rxx_full, bp_good, bad_nans=True)
 
 
-            write_xcorrmx(frmul, 30*' ' + 'Iteration ' + str(iiter), \
+            write_xcorrmx(frmul, ' Iteration ' + str(iiter) + \
+                          '                  Cross-Correlation Matrix.',\
                           Rxx_full, bp_good, station, exn, exc, bp_sym)
 
             write_numbers(frmul, '       Median ', corr_med_good, bp_good)
@@ -475,15 +476,21 @@ for iddir in range(n_datadir):
             band_pol = strband[ib] + ':' + strpol[ip]
 
             ax = plt.subplot(4, 2, iplot)
+
             ax.plot(t_hr, delps[ibp,:], 'b.', markersize=3, clip_on=False)
 
-            if not np.isnan(R_mult[ibp]):  
-                xmin, xmax = ax.get_xlim()
-                ymin, ymax = ax.get_ylim()
-                y_text = ymin + 0.87*(ymax - ymin)
-                y_text_rej = ymin + 0.50*(ymax - ymin)
+            xmin, xmax = ax.get_xlim()
+            ymin, ymax = ax.get_ylim()
+            y_text = ymin + 0.90*(ymax - ymin)
+            x_text = xmin + 0.05*(xmax - xmin)
 
+            # if ibp in bp_bad:
+            #     y_text_rej = ymin + 0.50*(ymax - ymin)
+            #     x_text_rej = xmin + 0.35*(xmax - xmin)
+            #     ax.text(x_text_rej, y_text_rej, 'Rejected', color='r')
 
+            #if not np.isnan(R_mult[ibp]):  
+            if ibp in bp_good:  
                 # x_marker = xmin + 0.93*(xmax - xmin)
                 # y_marker = ymin + 0.9*(ymax - ymin)
                 # icol = int(R_mult[ibp]*255)
@@ -494,22 +501,31 @@ for iddir in range(n_datadir):
                 #
                 # Print in axes correlation median and mult. correlation
                 #
-                x_text_mcor = xmin + 0.62*(xmax - xmin)
-                x_text_medi = xmin + 0.30*(xmax - xmin)
-                ax.text(x_text_medi, y_text, 'Medi:%6.3f;' % corr_median[ibp], \
-                        color='k', size=11)
+                #x_text_medi = xmin + 0.30*(xmax - xmin)
+                ax.text(x_text, y_text, 'Median:%6.3f;   Mult-corr:%6.3f' % \
+                        (corr_med_good[ibp], R_mult_good[ibp]), size=12)
 
-                ax.text(x_text_mcor, y_text, 'R_mult:%6.3f' % R_mult[ibp], \
-                        size=11)
+                # ax.text(x_text_mcor, y_text, 'R_mult:%6.3f' % R_mult[ibp], \
+                #         size=11)
 
                 # if (R_percent[ibp] < threshold_mulcor) or \
                 # if (R_mult[ibp] < threshold_mulcor) or \
                 #    (corr_median[ibp] < threshold_median):
-                if ibp in bp_bad:
-                    x_text_rej = xmin + 0.35*(xmax - xmin)
-                    #x_text3 = xmin + 0.30*(xmax - xmin)
-                    #y_text2 = ymin + 0.87*(ymax - ymin)
-                    ax.text(x_text_rej, y_text_rej, 'Rejected', color='r')
+                # if ibp in bp_bad:
+                #     x_text_rej = xmin + 0.35*(xmax - xmin)
+                #     #x_text3 = xmin + 0.30*(xmax - xmin)
+                #     #y_text2 = ymin + 0.87*(ymax - ymin)
+                #     ax.text(x_text_rej, y_text_rej, 'Rejected', color='r')
+            else:
+                if np.isnan(R_mult[ibp]):
+                    ax.text(x_text, y_text, ' No Data', size=12)
+                else:
+                    ax.text(x_text, y_text, 'Median:%6.3f;   Mult-corr:%6.3f' %\
+                        (corr_median[ibp], R_mult[ibp]), size=12)
+                y_text_rej = ymin + 0.50*(ymax - ymin)
+                x_text_rej = xmin + 0.35*(xmax - xmin)
+                ax.text(x_text_rej, y_text_rej, 'Rejected', color='r', size=14)
+                
 
 
             ax.set_ylabel(band_pol + " delay (ps)")
@@ -541,7 +557,9 @@ for iddir in range(n_datadir):
             fig2 = plt.figure(figsize=(6,5));
             ax2 = plt.subplot(111)
 
-            xcorimg = ax2.imshow(Rxx_nan, interpolation='none', cmap=hotr);
+            #xcorimg = ax2.imshow(Rxx_nan, interpolation='none', cmap=hotr);
+            xcorimg = ax2.imshow(Rxx_nan, interpolation='none', cmap=lcmjet, \
+                                 vmin=-1., vmax=1.);
             #xcorimg = ax2.imshow(Rxx_nan, interpolation='none', cmap=rYlGn);
             #plt.pcolormesh(Rxx_full, cmap=plt.cm.jet, offset_position='data');
             ax2.set_xticks(n0_7)
