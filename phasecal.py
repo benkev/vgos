@@ -97,14 +97,15 @@ def write_xcorrmx(fout, title, Rxx_full, bp_good, station, \
     nbandpol = np.size(Rxx_full,0)
     nbp_sym = len(bp_sym)
 
-    wrl2_1 = '#\n# ' + title + ' Station ' + station + \
-             ', Exp. ' + experiment_number + ', Code ' + experiment_code + \
-             '\n#\n'
+    wrl2_1 = '#\n# ' + title + '\n#'
+    # + ' Station ' + station + \
+    #          ', Exp. ' + experiment_number + ', Code ' + experiment_code + \
+    #         '\n#\n'
     wrl2_2 = 14*' '
     for ibp in range(nbp_sym):         # nbp_sym = 8 bandpols
         wrl2_2 += '    ' + bp_sym[ibp] + '  '
 
-    fout.write(wrl2_1)
+    fout.write(wrl2_1 + '\n')
     fout.write(wrl2_2 + '\n')
 
     for iy in range(nbandpol):
@@ -113,7 +114,7 @@ def write_xcorrmx(fout, title, Rxx_full, bp_good, station, \
             if (iy in bp_good) and (ix in bp_good):
                 wrl += ' {:6.3f} '.format(Rxx_full[iy,ix])
             else:
-                wrl += 9*' '
+                wrl += 8*' '
         fout.write(wrl + '\n')
     fout.write('\n')
 
@@ -129,9 +130,9 @@ def write_numbers(fout, prefix, numbers, bp_good):
     wrl = copy.copy(prefix)   # 13*' '
     for ibp in range(nbandpol):
         if ibp in bp_good:
-            wrl += ' {:7.4f}  '.format(numbers[ibp])
+            wrl += ' {:6.3f} '.format(numbers[ibp])
         else:
-            wrl += 10*' '
+            wrl += 8*' '
     fout.write(wrl + '\n')
 
 
@@ -144,18 +145,18 @@ def write_title(fout, title, station, experiment_number, experiment_code, \
     '''
 
     nbp_sym = len(bp_sym)
-    wrl1_1 = '#\n# ' + title + ' Station ' + station + \
-             ', Exp. ' + experiment_number + \
-             ', Code ' + experiment_code + '\n#\n'
-    wrl1_2 = '#'
+    wrl1_1 = '#\n# ' + title + '\n#\n# Station ' + station + \
+             ', Experiment ' + experiment_number + \
+             ', Code ' + experiment_code + '\n'
+    # wrl1_2 = '#'
 
-    fout.write(wrl1_1 + '\n')
+    fout.write(wrl1_1)
 
-    wrline1 = '# ' + experiment_code + ' ' + experiment_number + ' '
-    for ibp in range(nbp_sym):         # nbp_sym = 8 bandpols
-        wrline1 += '    ' + bp_sym[ibp] + '  '
+    # wrline1 = '# ' + experiment_code + ' ' + experiment_number + ' '
+    # for ibp in range(nbp_sym):         # nbp_sym = 8 bandpols
+    #     wrline1 += '    ' + bp_sym[ibp] + '  '
 
-    fout.write(wrline1 + '\n')
+    # fout.write(wrline1 + '\n')
 
 
 

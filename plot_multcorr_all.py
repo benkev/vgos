@@ -41,7 +41,8 @@ from functools import reduce
 import getopt
 
 
-threshold_mulcor = 90.
+#threshold_mulcor = 90.
+threshold_mulcor = 0.9
 threshold_median = 0.5
 
 all_stations = ('E', 'G', 'H', 'I', 'V', 'Y') 
@@ -89,7 +90,8 @@ for opt, val in optlist:
         if t_0 < 0.:
             threshold_mulcor = 0.
         elif t_0 > 100.:
-            threshold_mulcor = 100.
+            threshold_mulcor = 1.
+            #threshold_mulcor = 100.
         else:
             threshold_mulcor = t_0
     if opt == '-m':
@@ -375,51 +377,25 @@ for iddir in range(n_datadir):
         #
         # Log files
         #
-        fmedi = open(txt_median, 'w')  # With median values
+        # fmedi = open(txt_median, 'w')  # With median values
         frmul = open(txt_rmult, 'w')   # With R_mult values
 
         #
         # Compute the multiple correlation coefficients for every bandpol.
         #
         R_mult = mult_corr(Rxx_full, bp_good, bad_nans=True)
-        R_percent = 100.*R_mult
+        # R_percent = 100.*R_mult
 
         #
-        # Save the multiple correlation coefficients in log file
+        # Log file: cross-correlation medians and multiple correlations
         #
-        write_title(frmul, 'Mulpiple Correlation Coefficients (%).', \
+        write_title(frmul, 'Iterative Selection of Good Band-Pol Channels.', \
                     station, exn, exc, bp_sym)
-
-        #
-        # Save the cross-correlation matrix in R_mult file
-        #
-        write_xcorrmx(frmul, 'Cross-Correlation Matrix.', Rxx_full, bp_good, \
-                      station, exn, exc, bp_sym)
-
-        write_numbers(frmul, 13*' ', R_percent, bp_good)
-
-        #
-        # Save the cross-correlation medians in file
-        #
-        write_numbers(frmul, '      Medians ', corr_median, bp_good)
-
-
-        #
-        # Save the row medians in log file
-        #
-        write_title(fmedi, 'Medians of Correlation Matrix Rows.', \
-                    station, exn, exc, bp_sym)
-
-        #
-        # Save the cross-correlation matrix in R_mult file
-        #
-        write_xcorrmx(fmedi, 'Cross-Correlation Matrix.', Rxx_full, bp_good, \
-                      station, exn, exc, bp_sym)
-
-        #
-        # Write a line with the median values 
-        #
-        write_numbers(fmedi, 13*' ', corr_median, bp_good)
+        write_xcorrmx(frmul, 30*' ' + 'Cross-Correlation Matrix.', \
+                      Rxx_full, bp_good, station, exn, exc, bp_sym)
+        write_numbers(frmul, '       Median ', corr_median, bp_good)
+        write_numbers(frmul, '   Multi-Corr ', R_mult, bp_good)
+        frmul.write('\n')
 
 
         #
@@ -427,16 +403,15 @@ for iddir in range(n_datadir):
         # columns) of the correlation matrix Rxx_full below the threshold for
         # medians (if there are any)
         #
-        R_list = [R_percent]
-        R_pc_good = np.copy(R_percent)
+        # R_list = [R_percent]
+        R_list = [R_mult]
+        #R_pc_good = np.copy(R_percent)
         R_mult_good = np.copy(R_mult)
         corr_med_good = np.copy(corr_median)
         nbp_good = nbandpol
+        iiter = 1
 
-        #
-        # Index of row with minimum median
-        #
-        idx_minmed = np.nanargmin(corr_median)
+        idx_minmed = np.nanargmin(corr_median) # Index of row with min. median
 
         while corr_median[idx_minmed] < threshold_median:
             if nbp_good <= 4: 
@@ -462,39 +437,23 @@ for iddir in range(n_datadir):
             
             idx_minmed = np.nanargmin(corr_med_good)
 
-            R_mult_good[bp_good] = mult_corr(Rxx_full, bp_good, bad_nans=True)
-            R_pc_good = 100.*R_mult_good
-
-            #
-            # Write a line with the new  mult-corr values 
-            # for the rest of bandpols
-            #
-            write_numbers(frmul, 13*' ', R_pc_good, bp_good)
-
-            #
-            # Write a line with the new median values 
-            # for the rest of bandpols
-            #
-            write_numbers(fmedi, 13*' ', corr_med_good, bp_good)
+            #R_mult_good[bp_good] = mult_corr(Rxx_full, bp_good, bad_nans=True)
+            # R_pc_good = 100.*R_mult_good
+            R_mult_good = mult_corr(Rxx_full, bp_good, bad_nans=True)
 
 
-        # #
-        # # Save the cross-correlation matrix in R_mult file
-        # #
-        # write_xcorrmx(frmul, Rxx_full, bp_good, station, exn, exc, bp_sym)
+            write_xcorrmx(frmul, 30*' ' + 'Iteration ' + str(iiter), \
+                          Rxx_full, bp_good, station, exn, exc, bp_sym)
 
-        # #
-        # # Save the cross-correlation medians in file
-        # #
-        # write_numbers(frmul, '      Medians ', corr_median, bp_good)
-
-
-
-
+            write_numbers(frmul, '       Median ', corr_med_good, bp_good)
+            write_numbers(frmul, '    Mult-Corr ', R_mult, bp_good)
+            frmul.write('\n')
+            
+            iiter += 1
 
 
         frmul.close()
-        fmedi.close()
+        # fmedi.close()
 
 
         #
@@ -503,7 +462,7 @@ for iddir in range(n_datadir):
         fig = plt.figure(figsize=(8.5,11))
         fig.suptitle("Exp. " + exn + " (code " + exc + \
                      "), Station " + station + \
-                     ". Delay trend for bands ABCD:XY and R_multcorr")
+                     ". Delay for bands ABCD:XY, Median and R_mult.")
         strpol =  'XY'
         strband = 'ABCD'
 
@@ -518,29 +477,39 @@ for iddir in range(n_datadir):
             ax = plt.subplot(4, 2, iplot)
             ax.plot(t_hr, delps[ibp,:], 'b.', markersize=3, clip_on=False)
 
-            if not np.isnan(R_mult[ibp]):
+            if not np.isnan(R_mult[ibp]):  
                 xmin, xmax = ax.get_xlim()
                 ymin, ymax = ax.get_ylim()
-                x_marker = xmin + 0.93*(xmax - xmin)
-                y_marker = ymin + 0.9*(ymax - ymin)
-                x_text = xmin + 0.73*(xmax - xmin)
                 y_text = ymin + 0.87*(ymax - ymin)
-                icol = int(R_mult[ibp]*255)
+                y_text_rej = ymin + 0.50*(ymax - ymin)
 
-                ax.plot(x_marker, y_marker, marker='s', markersize=20, \
-                         markerfacecolor=rYlGn.colors[icol])
-                ax.text(x_text, y_text, '%5.2f' % R_percent[ibp])
 
-                if (R_percent[ibp] < threshold_mulcor) or \
-                   (corr_median[ibp] < threshold_median):
-                    x_text2 = xmin + 0.05*(xmax - xmin)
+                # x_marker = xmin + 0.93*(xmax - xmin)
+                # y_marker = ymin + 0.9*(ymax - ymin)
+                # icol = int(R_mult[ibp]*255)
+
+                # ax.plot(x_marker, y_marker, marker='s', markersize=20, \
+                #         markerfacecolor=rYlGn.colors[icol])
+
+                #
+                # Print in axes correlation median and mult. correlation
+                #
+                x_text_mcor = xmin + 0.62*(xmax - xmin)
+                x_text_medi = xmin + 0.30*(xmax - xmin)
+                ax.text(x_text_medi, y_text, 'Medi:%6.3f;' % corr_median[ibp], \
+                        color='k', size=11)
+
+                ax.text(x_text_mcor, y_text, 'R_mult:%6.3f' % R_mult[ibp], \
+                        size=11)
+
+                # if (R_percent[ibp] < threshold_mulcor) or \
+                # if (R_mult[ibp] < threshold_mulcor) or \
+                #    (corr_median[ibp] < threshold_median):
+                if ibp in bp_bad:
+                    x_text_rej = xmin + 0.35*(xmax - xmin)
                     #x_text3 = xmin + 0.30*(xmax - xmin)
                     #y_text2 = ymin + 0.87*(ymax - ymin)
-                    ax.text(x_text2, y_text, 'Rejected', color='r')
-
-                # Print in axes correlation median
-                x_text3 = xmin + 0.30*(xmax - xmin)
-                ax.text(x_text3, y_text, '%5.2f' % corr_median[ibp], color='k')
+                    ax.text(x_text_rej, y_text_rej, 'Rejected', color='r')
 
 
             ax.set_ylabel(band_pol + " delay (ps)")
