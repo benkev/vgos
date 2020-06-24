@@ -91,7 +91,6 @@ for opt, val in optlist:
             threshold_mulcor = 0.
         elif t_0 > 100.:
             threshold_mulcor = 1.
-            #threshold_mulcor = 100.
         else:
             threshold_mulcor = t_0
     if opt == '-m':
@@ -216,8 +215,8 @@ rYlGn = ListedColormap(cmYlGn(np.linspace(0.0, 0.6, 256)), name='rYlGn')
 # To plot the cross-correlation matrices, use inverted 'hot' colormap 
 # with reduced dynamic range (From white throuhg yellow to dense red)
 #
-cmhot_r = plt.cm.get_cmap('hot_r')
-hotr = ListedColormap(cmhot_r(np.linspace(0.0, 0.7, 256)), name='hotr')
+# cmhot_r = plt.cm.get_cmap('hot_r')
+# hotr = ListedColormap(cmhot_r(np.linspace(0.0, 0.7, 256)), name='hotr')
 
 cmjet = plt.cm.get_cmap('jet')
 lcmjet = ListedColormap(cmjet(np.linspace(0.1, 0.9, 256)), name='lcmjet')
@@ -301,16 +300,6 @@ for iddir in range(n_datadir):
             delps[ix,:] = dat[ix]['delay_ps']
 
 
-        # if not np.all(np.isfinite(delps)):
-        #     print('WARNING: Corrupt data for station ' + station[istn] + \
-        #           ' on path ' + datadir[iddir])
-        #     fwarn.write('WARNING: Corrupt data for station ' + \
-        #             station[istn] +  ' on path ' + datadir[iddir] + '\n')
-        #     raise SystemExit
-
-        #     continue  # ================================================= >>>
-            
-
         #
         # Assume time data the same for all bands. Use time from AX (ie 0-th).
         #
@@ -384,7 +373,6 @@ for iddir in range(n_datadir):
         # Compute the multiple correlation coefficients for every bandpol.
         #
         R_mult = mult_corr(Rxx_full, bp_good, bad_nans=True)
-        # R_percent = 100.*R_mult
 
         #
         # Log file: cross-correlation medians and multiple correlations
@@ -405,7 +393,6 @@ for iddir in range(n_datadir):
         #
         # R_list = [R_percent]
         R_list = [R_mult]
-        #R_pc_good = np.copy(R_percent)
         R_mult_good = np.copy(R_mult)
         corr_med_good = np.copy(corr_median)
         nbp_good = nbandpol
@@ -437,10 +424,7 @@ for iddir in range(n_datadir):
             
             idx_minmed = np.nanargmin(corr_med_good)
 
-            #R_mult_good[bp_good] = mult_corr(Rxx_full, bp_good, bad_nans=True)
-            # R_pc_good = 100.*R_mult_good
             R_mult_good = mult_corr(Rxx_full, bp_good, bad_nans=True)
-
 
             write_xcorrmx(frmul, ' Iteration ' + str(iiter) + \
                           '                  Cross-Correlation Matrix.',\
@@ -452,10 +436,7 @@ for iddir in range(n_datadir):
             
             iiter += 1
 
-
         frmul.close()
-        # fmedi.close()
-
 
         #
         # Create a plot for each band/pol we have data for (on a 2X4 grid)
@@ -484,38 +465,13 @@ for iddir in range(n_datadir):
             y_text = ymin + 0.90*(ymax - ymin)
             x_text = xmin + 0.05*(xmax - xmin)
 
-            # if ibp in bp_bad:
-            #     y_text_rej = ymin + 0.50*(ymax - ymin)
-            #     x_text_rej = xmin + 0.35*(xmax - xmin)
-            #     ax.text(x_text_rej, y_text_rej, 'Rejected', color='r')
-
-            #if not np.isnan(R_mult[ibp]):  
             if ibp in bp_good:  
-                # x_marker = xmin + 0.93*(xmax - xmin)
-                # y_marker = ymin + 0.9*(ymax - ymin)
-                # icol = int(R_mult[ibp]*255)
-
-                # ax.plot(x_marker, y_marker, marker='s', markersize=20, \
-                #         markerfacecolor=rYlGn.colors[icol])
-
                 #
                 # Print in axes correlation median and mult. correlation
                 #
-                #x_text_medi = xmin + 0.30*(xmax - xmin)
                 ax.text(x_text, y_text, 'Median:%6.3f;   Mult-corr:%6.3f' % \
                         (corr_med_good[ibp], R_mult_good[ibp]), size=12)
 
-                # ax.text(x_text_mcor, y_text, 'R_mult:%6.3f' % R_mult[ibp], \
-                #         size=11)
-
-                # if (R_percent[ibp] < threshold_mulcor) or \
-                # if (R_mult[ibp] < threshold_mulcor) or \
-                #    (corr_median[ibp] < threshold_median):
-                # if ibp in bp_bad:
-                #     x_text_rej = xmin + 0.35*(xmax - xmin)
-                #     #x_text3 = xmin + 0.30*(xmax - xmin)
-                #     #y_text2 = ymin + 0.87*(ymax - ymin)
-                #     ax.text(x_text_rej, y_text_rej, 'Rejected', color='r')
             else:
                 if np.isnan(R_mult[ibp]):
                     ax.text(x_text, y_text, ' No Data', size=12)
@@ -526,8 +482,6 @@ for iddir in range(n_datadir):
                 x_text_rej = xmin + 0.35*(xmax - xmin)
                 ax.text(x_text_rej, y_text_rej, 'Rejected', color='r', size=14)
                 
-
-
             ax.set_ylabel(band_pol + " delay (ps)")
             ax.grid(True)
 
@@ -535,8 +489,8 @@ for iddir in range(n_datadir):
                 ax.set_xlabel("hours since doy " + exp_doy_time)
 
         fig.tight_layout()
-
         fig.subplots_adjust(top=0.94)
+
         fig.savefig(fig_bandpol)
 
         if plot_xcorrmx:
@@ -557,17 +511,13 @@ for iddir in range(n_datadir):
             fig2 = plt.figure(figsize=(6,5));
             ax2 = plt.subplot(111)
 
-            #xcorimg = ax2.imshow(Rxx_nan, interpolation='none', cmap=hotr);
             xcorimg = ax2.imshow(Rxx_nan, interpolation='none', cmap=lcmjet, \
                                  vmin=-1., vmax=1.);
-            #xcorimg = ax2.imshow(Rxx_nan, interpolation='none', cmap=rYlGn);
-            #plt.pcolormesh(Rxx_full, cmap=plt.cm.jet, offset_position='data');
             ax2.set_xticks(n0_7)
             ax2.set_xticklabels(bp_sym)
             ax2.tick_params(axis='x', labeltop='on')
             ax2.set_yticks(n0_7)
             ax2.set_yticklabels(bp_sym)
-            #ax2.grid(1)
             fig2.colorbar(xcorimg, shrink=0.8)
             fig2.text(0.1, 0.95, 'Cross-Correlation Matrix. Station ' + \
                       station + ', Exp. ' + exn + ', Code ' + exc)
