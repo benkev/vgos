@@ -2,12 +2,23 @@
 plot_multcorr_all.py
 '''
 help_text = '''
-Generates plots of the band-pols for one experiment on one station,
-Computs the multiple correlation coefficients of each band-pol with respect
-to other band-pols.
-Computes medians for the rows (or columns) of the correlation matrix.
-The plots with the mult-corr below its threshold (-t or 90.) or with the 
-correlation median below its threshold (-m or 0.5) are marked as "Rejected". 
+This script selects good band-pols whose rows in the correlation matrix have
+medians below the threshold (now 0.5). The rows and columns of bad bandpols are
+iteratively removed from the matrix, improving the median values for other
+band-pols, until all medians are above the threshold. The correlation matrix,
+medians, and multiple correlation coefficients on each iteration (if any) are
+saved in text files. 
+
+Unlike plot_multcorr.py, the script can work on all the data (option -a) for
+one or several stations (like -s E, -s EGY, or -s IEHV). 
+
+Generates plots of the band-pols for one experiment on one station, or all the
+experiments on one or more stations. Computes medians for the rows (or columns)
+of the correlation matrix. Computes the multiple correlation coefficients of 
+each band-pol with respect to other band-pols.
+
+The plots with with the correlation median below its threshold are marked as 
+"Rejected". 
 
 Arguments:
   -t <threshold>              for multiple correlation coefficient, 0. to 100.
@@ -24,7 +35,7 @@ Arguments:
                               plotted and saved in -o directory.
                               If -a is present, -p is ignored (for too many 
                               windows would be open).
-  -h                          print this text'''
+  -h                          print this text.'''
 
 
 import numpy as np
