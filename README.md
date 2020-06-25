@@ -1,16 +1,18 @@
 # vgos
 
 Unaided selection of good cable delay data.
+
 The coefficient of multiple correlation of each band-pol with respect 
-to other seven is used.
-Also, medians for the rows (or columns) of the correlation matrix are calcuated 
+to other seven is used. Also, medians for the rows (or columns) of the
+correlation matrix are calcuated 
 
 ===============================================================================
 
 
 
-plot_multcorr_all.py:
+select_bandpols.py
 
+help_text = '''
 This script selects good band-pols whose rows in the correlation matrix have
 medians below the threshold (now 0.5). The rows and columns of bad bandpols are
 iteratively removed from the matrix, improving the median values for other
@@ -27,24 +29,60 @@ of the correlation matrix. Computes the multiple correlation coefficients of
 each band-pol with respect to other band-pols.
 
 The plots with with the correlation median below its threshold are marked as 
-"Rejected".  
+"Rejected". 
 
 Arguments:
-  -t <threshold>              for multiple correlation coefficient, 0. to 1.
   -m <threshold>              for correlation median, -1 to 1.
-  -s <a station letter>, like E, G, H ... (or in lower case, e, g, h ...);
+  -s <a station letter(s)>, like E, G, H, IEV (or in lower case, e, g, h, iev);
   -d <pcc_datfiles directory>       like /data/geodesy/3686/pcc_datfiles
   -o <output directory name>        where .png graphs and .txt logs are saved
-  -x                          plot cross-correlation matrix
+  -x                          plot x-correlation matrix
   -p                          show plot in X-window
   -a                          Make .png plots and .txt files for all available
                               data under directory in -d (like -d /data/geodesy)
-                              If one or more stations are given in -s, like
-                              -s E or -s VIGH, only data for those stations are
+                              If more stations are given in -s, like
+                              -s EY or -s VIGH, only data for those stations are
                               plotted and saved in -o directory.
                               If -a is present, -p is ignored (for too many 
                               windows would be open).
-  -h                          print this text'''
+  -h                          print this text.
+
+Examples:
+
+(1) Select good band-pols in experiment 3658 from station E. Save the band-pol
+plot in directory pltE. Save the correlation matrix plot (-x). Show both plots
+on the screen (-p). 
+The process of successive selection of good band-pols is logged in text file 
+bandpol_E_3658_VT8204.txt. 
+The plots are saved as bandpol_E_3658_VT8204.png and xcorrmx_E_3658_VT8204.png: 
+
+%run select_bandpols.py -s E -d /data/geodesy/3658/pcc_datfiles_jb/ -o pltE \
+                          -p -x
+
+(2) Select good band-pols in all (-a) the experimental data from station V
+located under directory /data/geodesy/. 
+Save the band-pol plots in directory pltV. Save the correlation matrix plots
+(-x). The key -p (show plots on the screen) is ignored when -a is used.  
+The processes of successive selection of good band-pols are
+logged in text file bandpol_V_<exp.code>_<exp.name>.txt. 
+The plots are saved as bandpol_E_<exp.code>_<exp.name>.png and 
+xcorrmx_E_<exp.code>_<exp.name>.png.
+The diagnostic messages are logged in diagnostics_st_E.txt:
+
+%run select_bandpols.py -s V -d /data/geodesy/ -o pltV -p -x -a
+
+(3) Select good band-pols in all (-a) the experimental data from stations
+I and Y. Save the band-pol plots in directory pltV. Save the correlation matrix
+plots (-x).  
+The processes of successive selection of good band-pols are
+logged in text file bandpol_<station>_<exp.code>_<exp.name>.txt. 
+The plots are saved as bandpol_<station>_<exp.code>_<exp.name>.png and 
+xcorrmx_<station>_<exp.code>_<exp.name>.png: 
+The diagnostic messages are logged in diagnostics_st_IY.txt:
+
+%run select_bandpols.py -s IY -d /data/geodesy/ -o pltIY -x -a
+'''
+
 
 
 ===============================================================================

@@ -30,8 +30,8 @@ Arguments:
   -p                          show plot in X-window
   -a                          Make .png plots and .txt files for all available
                               data under directory in -d (like -d /data/geodesy)
-                              If one or more stations are given in -s, like
-                              -s E or -s VIGH, only data for those stations are
+                              If more stations are given in -s, like
+                              -s EY or -s VIGH, only data for those stations are
                               plotted and saved in -o directory.
                               If -a is present, -p is ignored (for too many 
                               windows would be open).
@@ -76,6 +76,7 @@ The diagnostic messages are logged in diagnostics_st_IY.txt:
 
 import numpy as np
 import numpy.linalg as la
+from scipy.signal import medfilt
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 import phasecal
@@ -110,7 +111,7 @@ if sys.argv[1:] == []: # Print help text and exit if no command line options
     print(help_text)
     raise SystemExit
 
-optlist = getopt.getopt(sys.argv[1:], 't:s:d:o:phxa')[0]
+optlist = getopt.getopt(sys.argv[1:], 'm:s:d:o:phxa')[0]
 
 for opt, val in optlist:
     if opt == '-h':  # Print help text and exit if there is '-h' among options
@@ -137,7 +138,7 @@ for opt, val in optlist:
         elif m_0 > 1.:
             threshold_median = 1.
         else:
-            threshold_mulcor = m_0
+            threshold_median = m_0
     if opt == '-s':
         station = val.upper()     # Letter(s) like E or e, G or g etc.
     elif opt == '-d':
@@ -188,7 +189,7 @@ if dirname == '':
     print('ERROR: Data directory must be specified in option -d.')
     station_data_exist = False
 elif not os.path.isdir(dirname):
-    print('ERROR: Path ' + datadir + ' does not exist.')
+    print('ERROR: Path ' + dirname + ' does not exist.')
     dirname_exists = False
 
 #
@@ -369,10 +370,26 @@ for iddir in range(n_datadir):
 
 
         #
+        # Clean the data
+        #
+        # Apply median filter to delps, save the filtered data in delps_mf
+        #
+        delps_mf = np.zeros_like(delps)
+        for ibp in range(nbandpol):
+            delps_mf[ibp,:] = medfilt(delps[ibp,:], 21)
+        #
+        # Remove obvious spikes > +-1000
+        # Replace them with the median values
+        #
+        for ibp in range(nbandpol):
+            ispike = np.where(np.abs(delps[ibp,:]) > 1000.)
+            delps[ibp,ispike] = delps_mf[ibp,ispike]
+
+        #
         # Compute [nbandpol X nbandpol] correlation matrix of rows 
         # of delps[nbandpol,:]
         #
-        Rxx_full = np.corrcoef(delps)
+        Rxx_full = np.corrcoef(delps_mf)
 
         #
         # Assume all the bandpols are good
@@ -495,6 +512,7 @@ for iddir in range(n_datadir):
 
             ax = plt.subplot(4, 2, iplot)
 
+            ax.plot(t_hr, delps_mf[ibp,:], 'g', clip_on=False, lw=2.)
             ax.plot(t_hr, delps[ibp,:], 'b.', markersize=3, clip_on=False)
 
             xmin, xmax = ax.get_xlim()
