@@ -59,7 +59,7 @@ iplot = 1
 fig = plt.figure()
 
 
-for colmap in [rYlGn, hotr, lcmhsv, lcmgr]:
+for colmap in [lcmjet, hotr, lcmhsv, lcmgr]:
     ax = fig.add_subplot(4, 1, iplot, xlim=(0,255), ylim=(0,1))
     #ax.set_axis_off()
     col = PatchCollection([Rectangle((x, 0), 1, 1) for x in range(256)])
