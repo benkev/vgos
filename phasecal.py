@@ -139,18 +139,19 @@ def write_numbers(fout, prefix, numbers, bp_good):
 
 
 def write_title(fout, title, station, experiment_number, experiment_code, \
-                  bp_sym):
+                  bp_sym, threshold_median):
     '''
     Write title in file fout.
     '''
 
     nbp_sym = len(bp_sym)
-    wrl1_1 = '#\n# ' + title + '\n#\n# Station ' + station + \
+    wrl1 = '#\n# ' + title + '\n#\n# Station ' + station + \
              ', Experiment ' + experiment_number + \
              ', Code ' + experiment_code + '\n'
-    # wrl1_2 = '#'
+    wrl2 = '#\n# Median threshold: ' + str(threshold_median) + '\n'
 
-    fout.write(wrl1_1)
+    fout.write(wrl1)
+    fout.write(wrl2)
 
     # wrline1 = '# ' + experiment_code + ' ' + experiment_number + ' '
     # for ibp in range(nbp_sym):         # nbp_sym = 8 bandpols

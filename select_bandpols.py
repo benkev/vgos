@@ -158,8 +158,10 @@ for opt, val in optlist:
     elif opt == '-a':
         plot_all = True
 
+print('Median threshold: ' + str(threshold_median))
+
 #
-# Write log file with multcorr values
+# Write log file with cross-corr and multcorr values
 #
 txtwarn = outdir + 'diagnostics'
 txtwarn += '_all.txt' if station == '' else '_st_' + station +'.txt'
@@ -432,7 +434,7 @@ for iddir in range(n_datadir):
         # Log file: cross-correlation medians and multiple correlations
         #
         write_title(frmul, 'Iterative Selection of Good Band-Pol Channels.', \
-                    station, exn, exc, bp_sym)
+                    station, exn, exc, bp_sym, threshold_median)
         write_xcorrmx(frmul, 30*' ' + 'Cross-Correlation Matrix', \
                       Rxx_full, bp_good, station, exn, exc, bp_sym)
         write_numbers(frmul, '       Median ', corr_median, bp_good)

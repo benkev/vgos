@@ -1,0 +1,73 @@
+Hi Leo,
+
+Sorry for the delay in getting a chance to look at this. I've run it locally on
+my machine on the data of a few sessions and I think generally speaking the
+results look great! The median-filtered data really helps improve the
+correlation coefficients, and keeps them from being dominated by a few bad
+outliers.
+
+
+I agree that a higher value for the median threshold (when choosing band-pols)
+appears to do a better job selecting the appropriate band pols. In fact I think
+we could probably get away with an even higher threshold (say 0.7 or
+so). However, I expect we will probably get the best results by using a 'tuned'
+value of the median threshold for each station. For example, looking through a
+few sessions and judging by 'eye' it looks like using a median threshold value
+of 0.75 for GGAO does a good job eliminating the problematic band-pols, whereas
+for Wettzell, this threshold is too high and a more appropriate value might be
+something like 0.5.
+
+
+Based on this experience I think it might be useful to try to quantify a best
+value for the median threshold to be used for each individual station. I don't
+think we need to be extremely precise with this, covering the space from 0-1.0
+in increments of 0.1 should probably be sufficient, but to make a quantitative
+measurement of the best value I think the most reliable way to do this would be
+to directly compare the resulting delay (.pcmt) files generated from the
+band-pols your program selects (for each trial value of the threshold)
+against the existing .pcmt files for each station.
+
+
+To generate a .pcmt file from individual band-pol .dat files, you simply need to
+run the program pcc_select.py and pass it the selected band-pols for each
+station in the form of a comma separate list.
+
+
+For example, let's say your program suggests (for a particular threshold value)
+to use band-pols (BX,BY,CX,CY,DX) for station 'G', then to make the .pcmt file
+for this selection you would run.
+
+
+pcc_select.py -d /. -e vo0009 -s G:BX,BY,CX,CY,DX
+
+This then averages together the delays found in each .dat file and produces the
+resulting .pcmt file (which is later passed on to the software which creates the
+geodetic database for analysis).
+
+Then, to compare how well the resulting .pcmt file replicates the previously
+generated .pcmt file (which should also be found in the pcc_datfiles directory)
+you should simply need to form the differences in the delay values for each
+scan. Since doing this for several stations/sessions and various thresholds
+would probably generate a lot of data you may want to try to distill the
+differences between each pair of .pcmt files into a single value (perhaps the
+mean, median or RMS delay difference...I'll leave that to you to decide).
+
+
+In the end, I suspect that there will be a relatively small range of values for
+the median threshold applied to each station which will minimize the delay
+differences between the pre-existing .pcmt and the one generated from the
+band-pols that your select_bandpol.py program chooses. Hopefully, from that it
+should be relatively straightforward to choose a recommended threshold value for
+each station.
+
+
+
+Please let me know if you have any questions on this, though I will be out until
+the 8th, so I may not get back to you immediately.
+
+Enjoy the long holiday weekend!
+
+
+Best,
+
+John
