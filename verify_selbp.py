@@ -24,7 +24,7 @@ dat_pcmt = np.loadtxt(
 ndat = dat_pcmt.shape[0]
 
 #
-# Time in hours: t_hr
+# Put time axis values in hours to t_hr
 #
 tyear =   dat_pcmt['year'].astype(int)
 tmonth =  dat_pcmt['month'].astype(int)
@@ -50,9 +50,6 @@ for itim in range(ndat):
     t_sec[itim] = tstamp
 
 t_hr = (t_sec - tstamp0)/3600.    # Time in hours  
-
-
-
 
 
 
