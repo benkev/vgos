@@ -161,11 +161,17 @@ for opt, val in optlist:
 print('Median threshold: ' + str(threshold_median))
 
 #
-# Write log file with cross-corr and multcorr values
+# Write diagnostics file with warnings and error messages
 #
-txtwarn = outdir + 'diagnostics'
-txtwarn += '_all.txt' if station == '' else '_st_' + station +'.txt'
-fwarn = open(txtwarn, 'w')
+fname_warn = outdir + 'diagnostics' + '_st_' + station +'.txt'
+fwarn = open(fname_warn, 'w')
+
+
+#
+# Write file with selected bands
+#
+fname_sel = outdir + 'selections' + '_st_' + station +'.txt'
+fsel = open(fname_sel, 'w')
 
 
 
@@ -216,7 +222,11 @@ if plot_all:
     # If -a, get list of all the directories with data starting from 4-digit 
     # experiment code
     #
-    datadir = glob.glob(dirname + '????/pcc_datfiles*/')
+    datadir1 = glob.glob(dirname + '????/pcc_datfiles*/')
+    datadir = []
+    for dd in datadir1:
+        if 'datfiles/' in dd or 'datfiles_jb' in dd:
+            datadir.append(dd)
 
     wrong_datadir = []  # Gather here all subdirectories not like /3693/
     for ddir in datadir:
@@ -272,10 +282,49 @@ lcmjet = ListedColormap(cmjet(np.linspace(0.1, 0.9, 256)), name='lcmjet')
 for iddir in range(n_datadir):
 
     #
+    # Put data files for all the stations in fns:
+    #
+    fns = glob.glob(datadir[iddir] + '/bandmodel.??????.?.?.?.dat')
+    nfns = len(fns)
+    if nfns == 0:          # No data in the directory 
+        print('\nWARNING: No data on path ' + datadir[iddir])
+        fwarn.write('WARNING: No data on path ' + datadir[iddir] + '\n')
+        continue  # ======================================================= >>>
+
+    #
+    # Extract from path the experiment code like /3686/
+    #
+    exc = re.findall('\/[0-9]{4}\/', datadir[iddir])
+    exc = exc[0][1:-1]
+
+    #
+    # Extract from data file name the experiment name like .VT9050. 
+    # or .b17337.
+    #
+    # Any of the filenames can be picked; we pick the 0-th:  
+    #
+    exn = re.findall('(\.[A-y]{2}[0-9]{4}\.|\.[A-y][0-9]{5}\.)', fns[0])
+    exn = exn[0][1:-1]
+
+    #
+    # Each line in the 'selections' file starts with the experiment code
+    # followed by the experiment name
+    #
+    sel_bp = exc + ' ' + exn + '  '
+
+    #
     # If -a, loop over the stations specified in -s station string of letters.
     # Otherwise, n_station is 1, so only one station[0] in one experiment 
     # is plotted from datadir[0]
     #
+
+    #
+    # Progress
+    #
+    sys.stdout.write("\r# %d of %d, Exp. %s %s" % \
+                     (iddir+1, n_datadir, exc, exn))
+    sys.stdout.flush()
+
 
     for istn in range(n_station):
 
@@ -283,7 +332,7 @@ for iddir in range(n_datadir):
                            station[istn] + '.?.?.dat')
         nbandpol = len(fnames)
         if nbandpol == 0:          # No data for the station 
-            print('WARNING: No data for station ' + station[istn] + \
+            print('\nWARNING: No data for station ' + station[istn] + \
                   ' on path ' + datadir[iddir])
             fwarn.write('WARNING: No data for station ' + station[istn] + \
                         ' on path ' + datadir[iddir] + '\n')
@@ -291,25 +340,12 @@ for iddir in range(n_datadir):
         else:
             fnames.sort()
 
-        #
-        # Extract from path the experiment code like /3686/
-        #
-        exc = re.findall('\/[0-9]{4}\/', datadir[iddir])
-        exc = exc[0][1:-1]
-
-        #
-        # Extract from data file name the experiment name like .VT9050. 
-        # or .b17337.
-        #
-        exn = re.findall('(\.[A-y]{2}[0-9]{4}\.|\.[A-y][0-9]{5}\.)', fnames[0])
-        exn = exn[0][1:-1]
-
 
         st_exc_exn = station[istn] + '_' + exc + '_' + exn
         fig_bandpol = outdir + 'bandpol_' + st_exc_exn + '.png'
         fig_xcorrmx = outdir + 'xcorrmx_' + st_exc_exn + '.png'
-        txt_bandpol = outdir + 'bandpol_' + st_exc_exn + '.txt'
- 
+        fname_bandpol = outdir + 'bandpol_' + st_exc_exn + '.txt'
+
         #
         # Read all the 8 channel data into the array list datlist.
         # In case the datasets have different lengths, find the minimum length
@@ -422,8 +458,8 @@ for iddir in range(n_datadir):
         #
         # Log files
         #
-        # fmedi = open(txt_median, 'w')  # With median values
-        frmul = open(txt_bandpol, 'w')   # With R_mult values
+        # fmedi = open(fname_median, 'w')  # With median values
+        frmul = open(fname_bandpol, 'w')   # With R_mult values
 
         #
         # Compute the multiple correlation coefficients for every bandpol.
@@ -495,6 +531,39 @@ for iddir in range(n_datadir):
         frmul.close()
 
         #
+        # Prepare sel_st_bp, a string with the station letter and selected 
+        # band-pols in the format suitable for passing to the program
+        # pcc_select.py in option '-s', like 'E:BX,BY,CX,CY'
+        # 
+        #
+        strpol =  'XY'
+        strband = 'ABCD'
+        
+        sel_st_bp = station[istn] + ':' 
+        for ibp in range(nbandpol):
+            ip = ibp % 2         # 0 1 0 1 0 1 0 1 0 1 0 1 ...
+            ib = ibp // 2        # 0 0 1 1 2 2 3 3 0 0 1 1 ...
+            if ibp in bp_good:
+                sel_st_bp += strband[ib] + strpol[ip] + ','
+        sel_st_bp = sel_st_bp[:-1]
+
+
+        #
+        # Save on file the selected band-pols for one experiment and one station
+        #
+        # fname_selbp = outdir + 'selbp_' + st_exc_exn + '.txt'
+        # fselbp = open(fname_selbp, 'w')
+        # fselbp.write(sel_st_bp)
+        # fselbp.write('\n')
+        # fselbp.close()
+
+        #
+        # Append the selected band-pols for current station to the line
+        # in file 'selections'
+        #
+        sel_bp += sel_st_bp + '  '
+        
+        #
         # Create a plot for each band/pol we have data for (on a 2X4 grid)
         #
         fig = plt.figure(figsize=(8.5,11))
@@ -503,7 +572,6 @@ for iddir in range(n_datadir):
                      ". Delay for bands ABCD:XY, Median and R_mult.")
         strpol =  'XY'
         strband = 'ABCD'
-
         iplot = 0
         for ibp in range(nbandpol):
             ip = ibp % 2         # 0 1 0 1 0 1 0 1 0 1 0 1 ...
@@ -550,46 +618,56 @@ for iddir in range(n_datadir):
 
         fig.savefig(fig_bandpol)
 
-        if plot_xcorrmx:
-            #
-            # Do not plot the half of cross-correlation matrix under 
-            # the diagonal
-            #
-            Rxx_nan = np.copy(Rxx_full)
-            for ix in range(nbandpol):
-                Rxx_nan[ix,:(ix+1)] = np.NaN
+        #
+        # Save the plot of cross-correlation matrix
+        #
+        # Do not plot the half of cross-correlation matrix under 
+        # the diagonal
+        #
+        Rxx_nan = np.copy(Rxx_full)
+        for ix in range(nbandpol):
+            Rxx_nan[ix,:(ix+1)] = np.NaN
 
-            #
-            # Use inverted 'hot' colormap with reduced dynamic range
-            # (From white throuhg yellow to dense red)
-            #
-            n0_7 = np.arange(8)  # Tick values for 
+        #
+        # Use inverted 'hot' colormap with reduced dynamic range
+        # (From white throuhg yellow to dense red)
+        #
+        n0_7 = np.arange(8)  # Tick values for 
 
-            fig2 = plt.figure(figsize=(6,5));
-            ax2 = plt.subplot(111)
+        fig2 = plt.figure(figsize=(6,5));
+        ax2 = plt.subplot(111)
 
-            xcorimg = ax2.imshow(Rxx_nan, interpolation='none', cmap=lcmjet, \
-                                 vmin=-1., vmax=1.);
-            ax2.set_xticks(n0_7)
-            ax2.set_xticklabels(bp_sym)
-            ax2.tick_params(axis='x', labeltop='on')
-            ax2.set_yticks(n0_7)
-            ax2.set_yticklabels(bp_sym)
-            fig2.colorbar(xcorimg, shrink=0.8)
-            fig2.text(0.1, 0.95, 'Cross-Correlation Matrix. Station ' + \
-                      station + ', Exp. ' + exn + ', Code ' + exc)
+        xcorimg = ax2.imshow(Rxx_nan, interpolation='none', cmap=lcmjet, \
+                             vmin=-1., vmax=1.);
+        ax2.set_xticks(n0_7)
+        ax2.set_xticklabels(bp_sym)
+        ax2.tick_params(axis='x', labeltop='on')
+        ax2.set_yticks(n0_7)
+        ax2.set_yticklabels(bp_sym)
+        fig2.colorbar(xcorimg, shrink=0.8)
+        fig2.text(0.1, 0.95, 'Cross-Correlation Matrix. Station ' + \
+                  station + ', Exp. ' + exn + ', Code ' + exc)
 
-            fig2.savefig(fig_xcorrmx)
+        fig2.savefig(fig_xcorrmx)
 
 
         if plot_graph:
             fig.show()
-            fig2.show()
         else:
             plt.close(fig)
+
+        if plot_xcorrmx:
+            fig2.show()
+        else:
             plt.close(fig2)
 
-fwarn.close()
+    if nbandpol != 0:          # No data for the station 
+        fsel.write(sel_bp)
+        fsel.write('\n')
 
+sys.stdout.flush()
+
+fsel.close()
+fwarn.close()
 
 
