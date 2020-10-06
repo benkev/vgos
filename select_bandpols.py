@@ -165,6 +165,7 @@ print('Median threshold: ' + str(threshold_median))
 #
 fname_warn = outdir + 'diagnostics' + '_st_' + station +'.txt'
 fwarn = open(fname_warn, 'w')
+print('Diagnostics saved in ' + fname_warn)
 
 
 #
@@ -287,8 +288,10 @@ for iddir in range(n_datadir):
     fns = glob.glob(datadir[iddir] + '/bandmodel.??????.?.?.?.dat')
     nfns = len(fns)
     if nfns == 0:          # No data in the directory 
-        print('\nWARNING: No data on path ' + datadir[iddir])
+        if not plot_all:
+            print('WARNING: No data on path ' + datadir[iddir])
         fwarn.write('WARNING: No data on path ' + datadir[iddir] + '\n')
+        fwarn.flush()
         continue  # ======================================================= >>>
 
     #
@@ -307,10 +310,14 @@ for iddir in range(n_datadir):
     exn = exn[0][1:-1]
 
     #
+    # Prepare the beginning of line in the 'selections' file
     # Each line in the 'selections' file starts with the experiment code
     # followed by the experiment name
     #
-    sel_bp = exc + ' ' + exn + '  '
+    if datadir[iddir][-3:-1] == 'jb':
+        sel_bp = exc + ' ' + exn + ' jb  '
+    else:
+        sel_bp = exc + ' ' + exn + '     '
 
     #
     # If -a, loop over the stations specified in -s station string of letters.
@@ -321,9 +328,10 @@ for iddir in range(n_datadir):
     #
     # Progress
     #
-    sys.stdout.write("\r# %d of %d, Exp. %s %s" % \
-                     (iddir+1, n_datadir, exc, exn))
-    sys.stdout.flush()
+    if plot_all:
+        sys.stdout.write("\r# %d of %d, Exp. %s %s" % \
+                         (iddir+1, n_datadir, exc, exn))
+        sys.stdout.flush()
 
 
     for istn in range(n_station):
@@ -331,11 +339,13 @@ for iddir in range(n_datadir):
         fnames = glob.glob(datadir[iddir] + '/bandmodel.??????.' + \
                            station[istn] + '.?.?.dat')
         nbandpol = len(fnames)
-        if nbandpol == 0:          # No data for the station 
-            print('\nWARNING: No data for station ' + station[istn] + \
-                  ' on path ' + datadir[iddir])
+        if nbandpol == 0:          # No data for the station
+            if not plot_all:
+                print('WARNING: No data for station ' + station[istn] + \
+                      ' on path ' + datadir[iddir])
             fwarn.write('WARNING: No data for station ' + station[istn] + \
                         ' on path ' + datadir[iddir] + '\n')
+            fwarn.flush()
             continue  # =================================================== >>>
         else:
             fnames.sort()
@@ -661,9 +671,12 @@ for iddir in range(n_datadir):
         else:
             plt.close(fig2)
 
-    if nbandpol != 0:          # No data for the station 
-        fsel.write(sel_bp)
-        fsel.write('\n')
+    if nbandpol != 0:          # Data for the station exist 
+        fsel.write(sel_bp + '\n')
+        fsel.flush()
+        if not plot_all:
+            print('code exname     selected band-pols')
+            print(sel_bp)
 
 sys.stdout.flush()
 
