@@ -480,9 +480,9 @@ for iddir in range(n_datadir):
         # Log file: cross-correlation medians and multiple correlations
         #
         write_title(frmul, 'Iterative Selection of Good Band-Pol Channels.', \
-                    station, exn, exc, bp_sym, threshold_median)
+                    station[istn], exn, exc, bp_sym, threshold_median)
         write_xcorrmx(frmul, 30*' ' + 'Cross-Correlation Matrix', \
-                      Rxx_full, bp_good, station, exn, exc, bp_sym)
+                      Rxx_full, bp_good, station[istn], exn, exc, bp_sym)
         write_numbers(frmul, '       Median ', corr_median, bp_good)
         write_numbers(frmul, '   Multi-Corr ', R_mult, bp_good)
         frmul.write('\n')
@@ -530,7 +530,7 @@ for iddir in range(n_datadir):
 
             write_xcorrmx(frmul, ' Iteration ' + str(iiter) + \
                           '                  Cross-Correlation Matrix.',\
-                          Rxx_full, bp_good, station, exn, exc, bp_sym)
+                          Rxx_full, bp_good, station[istn], exn, exc, bp_sym)
 
             write_numbers(frmul, '       Median ', corr_med_good, bp_good)
             write_numbers(frmul, '    Mult-Corr ', R_mult, bp_good)
@@ -578,7 +578,7 @@ for iddir in range(n_datadir):
         #
         fig = plt.figure(figsize=(8.5,11))
         fig.suptitle("Exp. " + exn + " (code " + exc + \
-                     "), Station " + station + \
+                     "), Station " + station[istn] + \
                      ". Delay for bands ABCD:XY, Median and R_mult.")
         strpol =  'XY'
         strband = 'ABCD'
@@ -656,7 +656,7 @@ for iddir in range(n_datadir):
         ax2.set_yticklabels(bp_sym)
         fig2.colorbar(xcorimg, shrink=0.8)
         fig2.text(0.1, 0.95, 'Cross-Correlation Matrix. Station ' + \
-                  station + ', Exp. ' + exn + ', Code ' + exc)
+                  station[istn] + ', Exp. ' + exn + ', Code ' + exc)
 
         fig2.savefig(fig_xcorrmx)
 
