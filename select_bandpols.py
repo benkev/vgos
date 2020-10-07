@@ -159,11 +159,14 @@ for opt, val in optlist:
         plot_all = True
 
 print('Median threshold: ' + str(threshold_median))
+str_mf = '_mf' + str(threshold_median)[-1]
+
+
 
 #
 # Write diagnostics file with warnings and error messages
 #
-fname_warn = outdir + 'diagnostics' + '_st_' + station +'.txt'
+fname_warn = outdir + 'diagnostics' + '_st_' + station + str_mf + '.txt'
 fwarn = open(fname_warn, 'w')
 print('Diagnostics saved in ' + fname_warn)
 
@@ -171,7 +174,7 @@ print('Diagnostics saved in ' + fname_warn)
 #
 # Write file with selected bands
 #
-fname_sel = outdir + 'selections' + '_st_' + station +'.txt'
+fname_sel = outdir + 'selections' + '_st_' + station + str_mf + '.txt'
 fsel = open(fname_sel, 'w')
 
 
@@ -352,9 +355,10 @@ for iddir in range(n_datadir):
 
 
         st_exc_exn = station[istn] + '_' + exc + '_' + exn
-        fig_bandpol = outdir + 'bandpol_' + st_exc_exn + '.png'
+        st_exc_exn_mf = station[istn] + '_' + exc + '_' + exn + str_mf
+        fig_bandpol = outdir + 'bandpol_' + st_exc_exn_mf + '.png'
         fig_xcorrmx = outdir + 'xcorrmx_' + st_exc_exn + '.png'
-        fname_bandpol = outdir + 'bandpol_' + st_exc_exn + '.txt'
+        fname_bandpol = outdir + 'bandpol_' + st_exc_exn_mf + '.txt'
 
         #
         # Read all the 8 channel data into the array list datlist.
