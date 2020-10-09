@@ -159,7 +159,7 @@ for opt, val in optlist:
         plot_all = True
 
 print('Median threshold: ' + str(threshold_median))
-str_mf = '_mf' + str(threshold_median)[-1]
+str_mf = '_m' + '%4.2f' % threshold_median
 
 
 
