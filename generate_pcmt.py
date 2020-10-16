@@ -88,7 +88,7 @@ for exc in exp_codes:
 
     print(pcc_select_cmd)
     
-    # os.system(pcc_select_cmd)
+    os.system(pcc_select_cmd)
 
 
 # raise SystemExit
