@@ -12,6 +12,7 @@ import re, os, sys
 import getopt
 
 sfname = sys.argv[1]   # File name with the bandpol selections
+odname = sys.argv[2]   # Output directory name to store pcmt files
 
 #
 # Process command line options
@@ -83,8 +84,12 @@ for exc in exp_codes:
     pcc_select_cmd =  'pcc_select.py -e' + exname
     pcc_select_cmd += '-d /data/geodesy/' + excode + '/pcc_datfiles/ '
     pcc_select_cmd += '-s ' + sels_line + ' '
-    pcc_select_cmd += '-o pcmt_m0.50'
-    
-    os.system(pcc_select_cmd)
+    pcc_select_cmd += '-o ' + odname
 
+    print(pcc_select_cmd)
+    
+    # os.system(pcc_select_cmd)
+
+
+# raise SystemExit
 

@@ -27,7 +27,7 @@ Arguments:
   -d <pcc_datfiles directory>       like /data/geodesy/3686/pcc_datfiles
   -o <output directory name>        where .png graphs and .txt logs are saved
   -x                          plot x-correlation matrix
-  -p                          show plot in X-window
+  -p                          show band-pol plot in X-window
   -a                          Make .png plots and .txt files for all available
                               data under directory in -d (like -d /data/geodesy)
                               If more stations are given in -s, like
