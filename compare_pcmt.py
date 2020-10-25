@@ -36,7 +36,8 @@ st2to1 = {
 }
 
 
-pdname = sys.argv[1]   # Input directory name (containing pcmt files)
+pdname = sys.argv[1]            # Input directory name (containing pcmt files)
+if pdname[-1] != '/': pdname += '/'
 
 with open('pcmt.txt') as f: pcmts = f.readlines()
 
@@ -50,9 +51,9 @@ patt1 = r'(?:\/[A-y]{2}[0-9]{4}|\/[A-y][0-9]{5})[a-y][0-9a-y]'
 rmsl = []
 
 for pcmt in pcmts:
-    
-    pcmt = pcmt[:-1]                  # Remove '\n' at the end
-    pcmt2 = re.findall(patt, pcmt)[0]
+   
+    pcmt1 = pcmt[:-1]                  # Remove '\n' at the end
+    pcmt2 = re.findall(patt, pcmt1)[0]
     pcmt2 = pcmt2[3:]
     pcmt2 = glob.glob(pdname + '*' + pcmt2 + '*.dat')
 
@@ -61,24 +62,40 @@ for pcmt in pcmts:
     
     pcmt2 = pcmt2[0]
 
-    dat1 = np.loadtxt(pcmt,  dtype=fields)
+    dat1 = np.loadtxt(pcmt1, dtype=fields)
     dat2 = np.loadtxt(pcmt2, dtype=fields)
+    n1 = len(dat1) 
+    n2 = len(dat2) 
+
+    # print('len(%s) = %d\n  len(%s) = %d\n' % \
+    #           (pcmt1, n1, pcmt2, n2))
+
+    if n1 != n2:
+        print('WARNING: IGNORE PCMT files with different lengths, %d and %d: ' \
+              '\n  len(%s) = %d\n  len(%s) = %d\n' % \
+              (n1, n2, pcmt1, n1, pcmt2, n2))
+        continue   # ====================================================== >>>
+
 
     dl1 = dat1['delay_s']*1e12
     dl2 = dat2['delay_s']*1e12
-    Nsample = len(dl1)
     
-    rms = np.sqrt(np.mean(np.square(dl1 - dl2)))
+    #
+    # Remove trend using the median filter
+    #
+
+    delt_tr = dl1 - dl2             # Difference with trend
+    delt_mf = medfilt(delt_tr, 21)  # Median filtered
+    delt = delt_tr - delt_mf        # Trend (median) removed
+
+    rms = np.sqrt(np.mean(np.square(delt)))
     
 
-    expst = re.findall(patt1, pcmt) # Experiment name and 2-char station code
+    expst = re.findall(patt1, pcmt1) # Experiment name and 2-char station code
     expst = expst[0][1:]
     fout.write(expst + '  ' + '%8.3f\n' % rms)
     rmsl.append(rms)
 
-    print(pcmt2)
-
-    #plt.figure(); plt.plot(dl1, 'b.'); plt.plot(dl2, 'g.'); plt.grid(1)
 
 avg = np.mean(rmsl)
 print('mean rms: ' + '%8.3f\n' % avg)

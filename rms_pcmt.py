@@ -1,5 +1,10 @@
 '''
 rms_pcmt.py
+
+Comparison of the averaged cable delays read from the PCMT Files.
+
+The comparison is based on the RMS of their difference.
+
 '''
 
 import numpy as np
@@ -37,10 +42,6 @@ exp_doy_time = datim0.strftime('%j, %H:%M:%S')
 t_sec = np.asarray(tsecond, dtype=float)
 
 for itim in range(ndat):
-    # datim = datetime.datetime(int(tyear[itim]), 1, 1, \
-    #                           int(thour[itim]), int(tminute[itim]), \
-    #                           int(tsecond[itim])) + \
-    #     datetime.timedelta(int(tdoy[itim]) - 1)
     datim = datetime.datetime(tyear[itim], tmonth[itim], tday[itim], \
                                thour[itim], tminute[itim], tsecond[itim])
     ttuple = datim.timetuple()
@@ -55,28 +56,45 @@ t_hr = (t_sec - tstamp0)/3600.    # Time in hours
 dl1 = dat1['delay_s']*1e12
 dl2 = dat2['delay_s']*1e12
 
-rms = np.sqrt(np.mean(np.square(dl1 - dl2)))
+#
+# Remove trend using the median filter
+#
+delt_tr = dl1 - dl2             # Difference with trend
+delt_mf = medfilt(delt_tr, 21)  # Median filtered
+delt = delt_tr - delt_mf        # Trend (median) removed
+
+rms = np.sqrt(np.mean(np.square(delt)))
+
+rms_mf = medfilt(rms, 21)
 
 print('rms: ' + '%8.3f\n' % rms)
 
 
-fig = plt.figure(figsize=(16,5))
+fig = plt.figure(figsize=(12,10))
+#fig = plt.figure(figsize=(16,5))
 fig.suptitle('Averaged Cable Delays Comparison (PCMT Files). RMS = ' \
              + '%6.3f\n' % rms, fontsize=16)
 
-ax1 = plt.subplot(131)
+ax1 = plt.subplot(221)
 ax1.plot(t_hr, dl1, 'b.'); ax1.grid(1)
 plt.ylabel('Cable 1 Delay (ps)')
 plt.xlabel('Time (hours)')
 
-ax2 = plt.subplot(132)
+ax2 = plt.subplot(222)
 ax2.plot(t_hr, dl2, 'g.'); ax2.grid(1)
 plt.ylabel('Cable 2 Delay (ps)')
 plt.xlabel('Time (hours)')
 
-ax3 = plt.subplot(133)
-ax3.plot(t_hr, dl1 - dl2, 'r.'); ax3.grid(1)
+ax3 = plt.subplot(223)
+ax3.plot(t_hr, delt_tr, 'k.'); ax3.grid(1)
+ax3.plot(t_hr, delt_mf, 'r', lw=3)
 plt.ylabel('Difference (ps)')
+plt.xlabel('Time (hours)')
+
+ax4 = plt.subplot(224)
+ax4.plot(t_hr, delt, 'r.'); ax4.grid(1)
+ax4.set_ylim(2*delt.min(), 2*delt.max())  # Vertically narrow the error plot 
+plt.ylabel('Difference untrended (ps)')
 plt.xlabel('Time (hours)')
 
 fig.show()
