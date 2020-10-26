@@ -49,6 +49,18 @@ patt += r'[a-y][0-9a-y]\.pcmt\.'     # [ABCD]{1,4}\.[XY]{1,2}\.dat'
 patt1 = r'(?:\/[A-y]{2}[0-9]{4}|\/[A-y][0-9]{5})[a-y][0-9a-y]'
 
 rmsl = []
+rmsd_allst = {
+    'wf' : [], # Westford
+    'w2' : [], # Westford2 (defunct)
+    'gs' : [], # GGAO12M (Goddard)
+    'k2' : [], # Kokee
+    'ws' : [], # Wettzell
+    'yj' : [], # Yebes
+    'is' : [], # Ishioka
+    'oe' : [], # Onsala-Northeast
+    'ow' : [], # Onsala-Southwest
+    'mg' : []  # MGO (MacDonald)
+}
 
 for pcmt in pcmts:
    
@@ -93,14 +105,24 @@ for pcmt in pcmts:
 
     expst = re.findall(patt1, pcmt1) # Experiment name and 2-char station code
     expst = expst[0][1:]
+    st = expst[-2:].lower()  # 2-char station code
     fout.write(expst + '  ' + '%8.3f\n' % rms)
     rmsl.append(rms)
+    rmsd_allst[st].append(rms)
 
 
 avg = np.mean(rmsl)
 print('mean rms: ' + '%8.3f\n' % avg)
 fout.write('mean rms: ' + '%8.3f\n' % avg)
 
+rmsd = {}
+for st in rmsd_allst.keys():
+    if rmsd_allst[st] != []:
+        rmsd[st] = np.array(rmsd_allst[st])
+
+rmsd_avg = {}
+for st in rmsd.keys():
+    rmsd_avg[st] = np.mean(rmsd[st])
 
 
 
