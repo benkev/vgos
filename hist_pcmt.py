@@ -65,13 +65,13 @@ if len(thrs) == 0:
 
 #
 # Reduce the cmd line numbers to the proper format like 0.xx
-# and save them in ths list
+# and save them in thresholds list
 #
-ths = []
+thresholds = []
 for th in thrs:
     thf = float(th)
     if thf > 1.: thf = 0.01*thf
-    ths.append('%4.2f' % thf)
+    thresholds.append('%4.2f' % thf)
 
 #
 # Dictionary to store rms-es for individual stations for individual thresholds
@@ -89,7 +89,7 @@ rmsd_allst = {
     'mg' : OrderedDict()  # MGO (MacDonald)
 }
 
-for th in ths:
+for th in thresholds:
     #
     # Find and read in the relevant file
     #
@@ -128,7 +128,7 @@ for st in rmsd_allst.keys():
 
 for st in rmsd.keys():
     for th in rmsd_allst[st].keys():
-        rmsd[st][th] = np.array(rmsd_allst[st][th])
+        rmsd[st][th] = copy.copy(rmsd_allst[st][th])
 
 
 #raise SystemExit
@@ -153,28 +153,53 @@ if not os.path.isdir(outdir):
 figs = [] 
 
 for st in rmsd.keys():
+    #
+    # Assume the number of median values is the same for all thresholds
+    #
+    nrms = len(rmsd[st][thresholds[0]])
+
+    #
+    # Find maximal rms for the station st, removing too large values
+    #
+    st_rms_max =  -1e6
+    for th in rmsd[st].keys():
+        rmsl = rmsd[st][th]
+        rms_max1 = max(rmsl)
+        while rms_max1 > 50:         # Remove spurious values
+            rmsl.remove(rms_max1)
+            rms_max1 = max(rmsl)
+        if st_rms_max < rms_max1:
+            st_rms_max = rms_max1
+
+
+    print('\nStation "%s"; st_rms_max = %f' % (st, st_rms_max))
+
+    if nrms <= 2: # Do not plot histogram for too few values
+        continue  # ================================================== >>>
+
     fig = plt.figure(figsize=(10,12))
     figs.append(fig)
     fig.suptitle('Station "' + st + '". RMS of Diff (ps) ' \
-                 'for 12 Median Threshs.', fontsize=18)
+                 'for 12 Median Threshs., %d Values' % nrms, fontsize=18)
 
     axs = []
     isub = 0
 
     for th in rmsd[st].keys():
+        rms = np.array(rmsd[st][th], dtype=float)
         ax = fig.add_subplot(4,3,isub+1)
         axs.append(ax)
-        ax.hist(rmsd[st][th])
+        ax.hist(rms, range=[0., np.ceil(st_rms_max)])
         ax.grid(1)
-        y0, y1 = ax.get_ylim()
-        x0, x1 = ax.get_xlim()
-        ax.text(0.4, 0.9, 'avg. rms  ' + '%5.2f' % rmsd_avg[st][th], \
+        ax.text(0.5, 0.9, 'avg. rms  ' + '%5.2f' % rmsd_avg[st][th], \
              transform = ax.transAxes)
-        ax.text(0.4, 0.8, 'm. thresh. ' + th, transform = ax.transAxes)
+        ax.text(0.5, 0.8, 'm. thresh. ' + th, transform = ax.transAxes)
+        fig.tight_layout(rect=[0, 0, 1, 0.96])
+
         isub = isub + 1
 
     fig.savefig(outdir + 'hists_' + st + '.png')
 
-    # plt.close(fig)
+    plt.close(fig)
 
-    fig.show()
+    #fig.show()
