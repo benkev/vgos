@@ -67,11 +67,17 @@ if len(thrs) == 0:
 # Reduce the cmd line numbers to the proper format like 0.xx
 # and save them in thresholds list
 #
-thresholds = []
+thresh = []
+str_thresh = []
+nth = 0
 for th in thrs:
     thf = float(th)
     if thf > 1.: thf = 0.01*thf
-    thresholds.append('%4.2f' % thf)
+    str_thresh.append('%4.2f' % thf)
+    thresh.append(thf)
+    nth = nth + 1
+    if nth >= 12: # Leave only maximum 12 thresholds 
+        break     # ====================================================== >>>
 
 #
 # Dictionary to store rms-es for individual stations for individual thresholds
@@ -89,7 +95,7 @@ rmsd_allst = {
     'mg' : OrderedDict()  # MGO (MacDonald)
 }
 
-for th in thresholds:
+for th in str_thresh:
     #
     # Find and read in the relevant file
     #
@@ -132,14 +138,11 @@ for st in rmsd.keys():
 
 
 #raise SystemExit
+
 #
-# Averages:
+# RMS Averages:
 #
 rmsd_avg = OrderedDict()
-for st in rmsd.keys():
-    rmsd_avg[st] = OrderedDict()
-    for th in rmsd[st].keys():
-        rmsd_avg[st][th] = np.mean(rmsd[st][th])
 
 #raise SystemExit
 
@@ -148,20 +151,26 @@ if not os.path.isdir(outdir):
     os.mkdir(outdir)
 
 #
-# Plot one 3x4-figure per station 
+# Plot average RMS of difference (ps) vs median threshold 
 #
-figs = [] 
+fig1 = plt.figure(figsize=(10,8))
+fig1.suptitle('Average RMS of Difference (ps) vs Median Threshold', fontsize=18)
+# fig1.suptitle('Station "' + st + '". RMS of Diff (ps) ' \
+#                  'for 12 Median Threshs., %d Values' % nrms, fontsize=18)
+
+iavrms = 0
 
 for st in rmsd.keys():
     #
     # Assume the number of median values is the same for all thresholds
     #
-    nrms = len(rmsd[st][thresholds[0]])
+    nrms = len(rmsd[st][str_thresh[0]])
 
     #
-    # Find maximal rms for the station st, removing too large values
+    # Find maximal rms for the station st to set common histogram x-scale.
+    # Remove too large rms values.
     #
-    st_rms_max =  -1e6
+    st_rms_max = -1e6
     for th in rmsd[st].keys():
         rmsl = rmsd[st][th]
         rms_max1 = max(rmsl)
@@ -171,35 +180,81 @@ for st in rmsd.keys():
         if st_rms_max < rms_max1:
             st_rms_max = rms_max1
 
+    #
+    # For the station st, put the rms averages for each threshold level 
+    # into rmsd_avg[st].
+    # Find minimum among the rms averages avg_rms_min 
+    # and its threshold key th_min.
+    #
+    rmsd_avg[st] = OrderedDict()
+    avg_rms_min = 1e6 
+    for th in rmsd[st].keys():
+        avg_rms = np.mean(rmsd[st][th])
+        rmsd_avg[st][th] = avg_rms
+        if avg_rms < avg_rms_min:
+            avg_rms_min = avg_rms
+            th_min = th
+            fth_min = float(th_min)
 
     print('\nStation "%s"; st_rms_max = %f' % (st, st_rms_max))
 
     if nrms <= 2: # Do not plot histogram for too few values
         continue  # ================================================== >>>
 
-    fig = plt.figure(figsize=(10,12))
-    figs.append(fig)
-    fig.suptitle('Station "' + st + '". RMS of Diff (ps) ' \
-                 'for 12 Median Threshs., %d Values' % nrms, fontsize=18)
+    #
+    # Plot average RMS of difference (ps) vs median thresholds
+    #
+    avrms = [val for val in rmsd_avg[st].values()]
 
-    axs = []
-    isub = 0
+    ax = fig1.add_subplot(2,3,iavrms+1)
+    ax.plot(thresh, avrms, lw=2, color='blue')
+    ax.plot(thresh, avrms, 'bo', markersize=4, color='black')
+    ax.plot([fth_min], [avg_rms_min], 'r*', markersize=10)
+    ax.text(0.25, 0.9, 'Station "' + st + '"', transform = ax.transAxes, \
+            fontsize=18)
+    ax.text(0.15, 0.3, 'Optimum at %s' % th_min, fontsize=14, \
+            transform = ax.transAxes)
+    ax.grid(1)
+    fig1.tight_layout(rect=[0, 0, 1, 0.96])
+    iavrms = iavrms + 1
+
+    #
+    # Plot one 3x4-figure per station 
+    #
+    # Plot 4x3=12 histograms of the RMS of difference (ps) between
+    # two pcmt files for 12 Median Threshs
+    #
+    fig2 = plt.figure(figsize=(10,12))
+    fig2.suptitle('Station "' + st + '". RMS of Difference (ps) ' \
+                  'for 12 Median Threshs., %d Values' % nrms, fontsize=14)
+    ihist = 0
 
     for th in rmsd[st].keys():
         rms = np.array(rmsd[st][th], dtype=float)
-        ax = fig.add_subplot(4,3,isub+1)
-        axs.append(ax)
-        ax.hist(rms, range=[0., np.ceil(st_rms_max)])
+        ax = fig2.add_subplot(4,3,ihist+1)
+        ax.hist(rms, range=[0., np.ceil(st_rms_max)], alpha=0.7)
         ax.grid(1)
+        txtcol = 'red' if th == th_min else 'black' 
         ax.text(0.5, 0.9, 'avg. rms  ' + '%5.2f' % rmsd_avg[st][th], \
-             transform = ax.transAxes)
-        ax.text(0.5, 0.8, 'm. thresh. ' + th, transform = ax.transAxes)
-        fig.tight_layout(rect=[0, 0, 1, 0.96])
+                transform = ax.transAxes, color=txtcol)
+        ax.text(0.5, 0.8, 'm. thresh. ' + th, transform = ax.transAxes, \
+                color=txtcol)
+        fig2.tight_layout(rect=[0, 0, 1, 0.96])
 
-        isub = isub + 1
+        ihist = ihist + 1
 
-    fig.savefig(outdir + 'hists_' + st + '.png')
 
-    plt.close(fig)
+    # fig1.show()
+    # fig2.show()
+    # raise SystemExit
 
-    #fig.show()
+    fig2.savefig(outdir + 'hists_' + st + '.png')
+    plt.close(fig2)
+
+fig1.text(0.69, 0.25, 'X axis: median threshold', fontsize=16)
+fig1.text(0.69, 0.20, 'Y axis: average rms', fontsize=16)
+
+fig1.savefig(outdir + 'avg_rms_vs_thresh.png')
+#fig1.show()
+plt.close(fig1)
+
