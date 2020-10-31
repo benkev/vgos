@@ -7,6 +7,8 @@ value. The histograms are built for all the stations available.
 
 The rms data are read from files pcmt_stat.txt in directories pcmt_m0.xx/
 
+The first parameter on the command line is the output directory name.
+
 The set of 12 thresholds is specified on the command line. The threshold values
 can be either numbers in [0..1] at the precision of two decimals after the dot
 or just 2-digit percent values. I.e., the following numbers are considered
@@ -15,11 +17,11 @@ equivalent:
 
 Example:
 
-python hist_pcmt.py 50 70 90 91 92 93 94 95 96 97 98 99
+python hist_pcmt.py hist_pcmt1 50 70 90 91 92 93 94 95 96 97 98 99
 
 or, which is the same:
 
-python hist_pcmt.py .5 0.7 90 0.91 .92 .93 .94 0.95 96 97 98 99
+python hist_pcmt.py hists/ .5 0.7 90 0.91 .92 .93 .94 0.95 96 97 98 99
 
 '''
 
@@ -27,6 +29,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from collections import OrderedDict
 import re, os, sys, glob, copy
+import getopt
 
 # fields = [('year', 'i4'),  ('month', 'i2'),  ('day', 'i2'),
 #           ('hour', 'i2'), ('minute', 'i2'), ('second', 'i2'),
@@ -58,10 +61,47 @@ st2to1 = {
     'mg' : 'M'  # MGO (MacDonald)
 }
 
-thrs = sys.argv[1:]
+st1name = {
+    'E' : 'Westford',
+    'F' : 'Westford',
+    'G' : 'Goddard',
+    'H' : 'Kokee',
+    'V' : 'Wettzell',
+    'Y' : 'Yebes',
+    'I' : 'Ishioka',
+    'S' : 'Onsala-NE',
+    'T' : 'Onsala-SW',
+    'M' : 'MacDonald'
+}
+
+st2name = {
+    'wf' : 'Westford',
+    'w2' : 'Westford',
+    'gs' : 'Goddard',
+    'k2' : 'Kokee',
+    'ws' : 'Wettzell',
+    'yj' : 'Yebes',
+    'is' : 'Ishioka',
+    'oe' : 'Onsala-NE',
+    'ow' : 'Onsala-SW',
+    'mg' : 'MacDonald'
+}
+
+
+outdir = sys.argv[1]
+if outdir[-1] != '/': outdir += '/'
+
+if not os.path.isdir(outdir):
+    os.mkdir(outdir)
+
+thrs = sys.argv[2:]
+
+
 if len(thrs) == 0:
     print("Usage:\npython hist_pcmt.py <thr1> <thr2> <thr3> ... <thrN>")
     raise SystemExit
+
+#raise SystemExit
 
 #
 # Reduce the cmd line numbers to the proper format like 0.xx
@@ -76,8 +116,8 @@ for th in thrs:
     str_thresh.append('%4.2f' % thf)
     thresh.append(thf)
     nth = nth + 1
-    if nth >= 12: # Leave only maximum 12 thresholds 
-        break     # ====================================================== >>>
+#    if nth >= 12: # Leave only maximum 12 thresholds 
+#        break     # ====================================================== >>>
 
 #
 # Dictionary to store rms-es for individual stations for individual thresholds
@@ -146,9 +186,9 @@ rmsd_avg = OrderedDict()
 
 #raise SystemExit
 
-outdir = 'hist_pcmt/'
-if not os.path.isdir(outdir):
-    os.mkdir(outdir)
+# outdir = 'hist_pcmt/'
+# if not os.path.isdir(outdir):
+#    os.mkdir(outdir)
 
 #
 # Plot average RMS of difference (ps) vs median threshold 
@@ -242,6 +282,9 @@ for st in rmsd.keys():
         fig2.tight_layout(rect=[0, 0, 1, 0.96])
 
         ihist = ihist + 1
+
+        if ihist >= 12:
+            break   # ==================================================== >>>
 
 
     # fig1.show()
