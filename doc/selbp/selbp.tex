@@ -1,0 +1,174 @@
+\documentclass[preprint]{aastex}
+
+\begin{document}
+
+\title{Software for Ruling out Spurious VGOS Cable Delay Data}
+
+\author{L. V. Benkevitch}
+\affil{MIT Haystack Observatory, Westford MA}
+
+This document describes several programs intended for automated selection of the reliable cable delay calibration data in VGOS experiments. 
+
+\begin{enumerate}
+  \item select\_bandpols.py
+  		
+  \item generate\_pcmt.py
+  \item compare\_pcmt.py
+  \item hist\_pcmt.py
+\end{enumerate}
+
+
+\section{Introduction}
+
+The programs are Python scripts. They are usually run in the \texttt{IPython} environment. The command \texttt{\%run} is used. 
+
+The VGOS stations have one-letter and two-letter abbreviations used in the described software and provided in the table below. 
+\begin{verbatim}
+ One-     Two-     Station
+Letter   Letter     Name
+---------------------------------
+  E    :   wf   :  Westford
+  F    :   w2   :  Westford2 (defunct)
+  G    :   gs   :  GGAO12M (Goddard)
+  H    :   k2   :  Kokee
+  V    :   ws   :  Wettzell
+  Y    :   yj   :  Yebes
+  I    :   is   :  Ishioka
+  S    :   oe   :  Onsala-Northeast
+  T    :   ow   :  Onsala-Southwest
+  M    :   mg   :  MGO (MacDonald)
+\end{verbatim}
+
+There are four data transmission bands, \texttt{A, B, C} and \texttt{D}, each having two polarizations, \texttt{X} and \texttt{Y}, which yields total of eight channels called band-pols. They are denoted as \texttt{AX, AY, BX, BY, CX, CY, DX, DY}. 
+
+
+
+\section{Script \texttt{select\_bandpols.py}: Selection of Cable Delay Calibration data}
+
+The cable delays measured over a session as functions of time are intrinsically highly correlated processes. If for some reason a band-pol delay process shows poor correlation with other band-pols, it should be discarded as bad. This is a basis of the discriminator algorithm used in the main program, \texttt{select\_bandpols.py}. For the eight band-pols, the \texttt{8x8}-dimensioned correlation matrix $R$ is calculated, each element of which containing the Pearson correlation coefficient between $i$-th and $j$-th band-pol. The matrix is symmetric and has a unity diagonal. If all the band-pols are good, all the matrix has only values close to $+1$. However, if, say, the $k$-th band-pol data are spurious, then all the values in the $k$-th row (and in the $k$-th column) will be much lower than $+1$. Fig.~\ref{xcorrmx} shows two examples of correlation matrices.
+
+\begin{figure*}   [ht!]
+\plotone{xcorrmx.eps}
+\caption{\small Visualization of the correlation matrices for two experiments, VT8347 on Station E (Westford) and VT9231 on Station H (Kokee). Since the correlation matrices are symmetric with the unities on the diagonal, only the upper triangle above the diagonal is shown. The matrix in the left panel contains the Pearson correlation coefficients very close to +1 because the band delay curves are highly correlated between each other. The right-panel correlation matrix demonstrates poor correlation of band-pols AX, AY, and DY with other band-pols. 
+\label{xcorrmx}}
+\end{figure*}
+
+%
+%\begin{figure} [ht!]
+%\epsscale{0.8}
+%\plottwo{000008_1_1_000.fits.eps}{bf_000008_9prm_1_1_000deg_snd.eps}
+%\caption{\small Comparison of the observed BJPL2013 image on the left and the 9-parameter model fitted to the simulated VLBI observation data on the right. The parameters of both source image and its model fit are printed above the images. 
+%\label{imag_000008}}
+%\end{figure*}
+%
+
+Obviously, in Experiment VT9231 on Station H (Kokee) three band-pol channels, AX, AY, and DY have spurious band delay data and are to be rejected, because their columns (or rows, which is the same in a symmetric matrix) contain low correlations. A channel is discarded if the median of the column is below the specified ``median threshold". 
+
+The script \texttt{select\_bandpols.py} selects good band-pols whose rows in the correlation matrix have medians below the threshold (default value 0.5). The rows and columns of bad band-pols are iteratively removed from the matrix, improving the median values for other band-pols, until all medians are above the threshold. The correlation matrix, medians, and multiple correlation coefficients on each iteration (if any) are saved in text files.
+
+The script can work on all the data (option -a) for one or several stations One can specify them in option \texttt{-s}, like \texttt{-s E, -s EGY}, or \texttt{-s IEHV}.
+
+The script \texttt{select\_bandpols.py} generates plots of the band-pols for one experiment on one station, or all the experiments on one or more stations. It computes medians for the rows (or columns) of the correlation matrix.
+
+The plots with with the correlation median below its threshold are marked as "Rejected". 
+
+Arguments: \\
+\texttt{  -m <threshold>}:    threshold for the correlation median, -1 to 1 (default 0.5). \\
+\texttt{ -s <a station letter>}, like E, G, H ... (or in lower case, e, g, h ...). \\
+\texttt{  -d <pcc\_datfiles directory>}, like \texttt{/data/geodesy/3686/pcc\_datfiles} \\
+\texttt{  -o <output directory name>} where \texttt{.png} graphs and \texttt{.txt} logs are saved. \\
+\texttt{  -x}: plot cross-correlation matrix. \\
+\texttt{  -p}: show band-pol plot in X-window. \\
+\texttt{  -a}: Make \texttt{.png} plots and \texttt{.txt} files for all available data under directory in -d (like \texttt{-d /data/geodesy}). If more stations are given in -s, like \texttt{-s EY} or \texttt{-s VIGH}, only data for those stations are plotted and saved in -o directory. If -a is present, -p is ignored (for too many windows would be opened). \\
+  -h print the help text. \\
+
+Examples:
+
+(1) Select good band-pols in experiment 3658 from station E. Save the band-pol
+plot in directory \texttt{pltE}. Save the correlation matrix plot (-x). Show both plots
+on the screen (-p). 
+The process of successive selection of good band-pols is logged in text file 
+\verb$bandpol_E_3658_VT8204.txt$. 
+The plots are saved as \verb$bandpol_E_3658_VT8204.png$ and \\
+\verb$xcorrmx_E_3658_VT8204.png$: 
+
+\verb$%run select_bandpols.py -s E -d /data/geodesy/3658/pcc_datfiles\jb/ \$ \\
+\verb$                            -o pltE -p -x$
+
+(2) Select good band-pols in all the experimental data from station V
+located under directory /data/geodesy/. 
+Save the band-pol plots in directory pltV. Save the correlation matrix plots
+(-x). The key -p (show plots on the screen) is ignored when -a is used.  
+The processes of successive selection of good band-pols are
+logged in text file \verb$bandpol_V_<exp.code>_<exp.name>.txt$. 
+The plots are saved as \verb$bandpol_E_<exp.code>_<exp.name>.png$ and \\
+\verb$xcorrmx_E_<exp.code>_<exp.name>.png$.
+The diagnostic messages are logged in the file\\
+\verb$diagnostics_st_E.txt$:
+
+\verb$%run select_bandpols.py -s V -d /data/geodesy/ -o pltV -p -x -a$
+
+(3) Select good band-pols in all the experimental data from stations
+I and Y. Save the band-pol plots in directory \verb$pltV$. Save the correlation matrix
+plots (-x).  
+The processes of successive selection of good band-pols are logged in the text file \verb$bandpol_<station>_<exp.code>_<exp.name>.txt$. The plots are saved as \verb$bandpol_<station>_<exp.code>_<exp.name>.png$ and \\
+\verb$xcorrmx_<station>_<exp.code>_<exp.name>.png$.
+The diagnostic messages are logged in the file \verb@diagnostics_st_IY.txt@:
+
+\verb$%run select_bandpols.py -s IY -d /data/geodesy/ -o pltIY -x -a$
+
+%
+%
+%\texttt{Scripts:
+%
+%generate\_pcmt.py
+%
+%This program generates pcmt files using pcc\_select.py with the bandpol
+%selections generated by select\_bandpols.py and saved in the file 
+%'selections\_st\_<station(s)>\_m<median-threshold>.txt'.
+%} 
+%
+%
+%\texttt{
+%hist\_pcmt.py
+%
+%Plot 3x4=12 histograms of the rms difference between PCMT files.
+%Each plot has 3x4=12 histograms for a station at the same median threshold 
+%value. The histograms are built for all the stations available.
+%
+%Also, it plots graphs of average RMS of difference (ps) vs median thresholds.
+%
+%The rms data are read from files pcmt\_stat.txt in directories pcmt\_m0.xx/
+%
+%The first parameter on the command line is the output directory name.
+%
+%The set of 12 thresholds is specified on the command line. The threshold values
+%can be either numbers in [0..1] at the precision of two decimals after the dot
+%or just 2-digit percent values. I.e., the following numbers are considered
+%equivalent:
+%  0.78 or .78 or 78
+%
+%Example:
+%
+%python hist\_pcmt.py hist\_pcmt1 50 70 90 91 92 93 94 95 96 97 98 99
+%
+%or, which is the same:
+%
+%python hist\_pcmt.py hists/ .5 0.7 90 0.91 .92 .93 .94 0.95 96 97 98 99
+%}
+%
+
+%\begin{enumerate}
+%  \item select\_bandpols.py
+%  		
+%  \item generate\_pcmt.py
+%  \item compare\_pcmt.py
+%  \item hist\_pcmt.py
+%\end{enumerate}
+
+% Scripts:
+
+
+
+
+\end{document}

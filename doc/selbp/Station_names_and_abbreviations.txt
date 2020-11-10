@@ -1,0 +1,13 @@
+ One-     Two-     Station
+Letter   Letter     Name
+------------------------------
+  E    :   wf   :  Westford
+  F    :   w2   :  Westford2 (defunct)
+  G    :   gs   :  GGAO12M (Goddard)
+  H    :   k2   :  Kokee
+  V    :   ws   :  Wettzell
+  Y    :   yj   :  Yebes
+  I    :   is   :  Ishioka
+  S    :   oe   :  Onsala-Northeast
+  T    :   ow   :  Onsala-Southwest
+  M    :   mg   :  MGO (MacDonald)

@@ -1,9 +1,11 @@
 '''
 hist_pcmt.py
 
-Plot 3x4=12 histograms of the rms difference between PCMT files.
+Plots 3x4=12 histograms of the rms difference between PCMT files.
 Each plot has 3x4=12 histograms for a station at the same median threshold 
 value. The histograms are built for all the stations available.
+
+Also, it plots graphs of average RMS of difference (ps) vs median thresholds.
 
 The rms data are read from files pcmt_stat.txt in directories pcmt_m0.xx/
 
