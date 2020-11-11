@@ -72,6 +72,11 @@ The script \texttt{select\_bandpols.py} generates plots of the band-pols for one
 
 The plots with with the correlation median below its threshold are marked as "Rejected". 
 
+The selected band-pols are saved in the file \\
+\verb$selections_st_<station-name(s)>_m<median-threshold>.txt$. 
+The format of any line in the file \verb@selections_st*.txt@ allows its substitution in option \verb@-s@ of the script \verb@pcc_select.py@.
+
+
 Arguments: \\
 \texttt{  -m <threshold>}:    threshold for the correlation median, -1 to 1 (default 0.5). \\
 \texttt{ -s <a station letter>}, like E, G, H ... (or in lower case, e, g, h ...). \\
