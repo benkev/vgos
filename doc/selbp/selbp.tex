@@ -122,6 +122,20 @@ The diagnostic messages are logged in the file \verb@diagnostics_st_IY.txt@:
 
 \verb$%run select_bandpols.py -s IY -d /data/geodesy/ -o pltIY -x -a$
 
+
+
+\section{Script \texttt{generate\_pcmt.py}: Bulk Generation of PCMT Files}
+
+The selected good band delay data are averaged by the script \verb$pcc_select.py$, which saves the results in the PCMT data files. 
+
+
+
+\section{Assessment of validity of the automated band-pol selection using the PCMT files}
+
+The automated band-pol selection based on the correlation matrix needs tweaking of the column median threshold. Previously, the good band delay data were selected manually and averaged by the script \verb$pcc_select.py$, and the results were saved in the PCMT data files. Assuming the manual selection provides the best results, the averaged automatically selected channels can be compared against those manually selected. 
+
+
+
 %
 %
 %\texttt{Scripts:
