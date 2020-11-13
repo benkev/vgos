@@ -26,16 +26,14 @@ Arguments:
   -s <a station letter>, like E, G, H ... (or in lower case, e, g, h ...);
   -d <pcc_datfiles directory>       like /data/geodesy/3686/pcc_datfiles
   -o <output directory name>        where .png graphs and .txt logs are saved
-  -x                          plot x-correlation matrix
-  -p                          show band-pol plot in X-window
-  -a                          Make .png plots and .txt files for all available
-                              data under directory in -d (like -d /data/geodesy)
-                              If more stations are given in -s, like
-                              -s EY or -s VIGH, only data for those stations are
-                              plotted and saved in -o directory.
-                              If -a is present, -p is ignored (for too many 
-                              windows would be open).
-  -h                          print this text.
+  -x    plot x-correlation matrix      (TO BE REPLACED BY -c!!!!!!!)
+  -p    show band-pol plot in X-window (TO BE REPLACED BY -b!!!!!!!)
+  -a    process all available data under directory in -d (like -d /data/geodesy)
+        If more stations are given in -s, like -s EY or -s VIGH, only the
+        data for those stations are plotted and saved in -o directory.
+        If -a is present, -p is ignored (for too many windows would be open).
+  -n    do not create plots and do not save them in .png files
+  -h    print this text.
 
 Examples:
 
@@ -111,7 +109,7 @@ if sys.argv[1:] == []: # Print help text and exit if no command line options
     print(help_text)
     raise SystemExit
 
-optlist = getopt.getopt(sys.argv[1:], 'm:s:d:o:phxa')[0]
+optlist = getopt.getopt(sys.argv[1:], 'm:s:d:o:phxan')[0]
 
 for opt, val in optlist:
     if opt == '-h':  # Print help text and exit if there is '-h' among options
@@ -124,11 +122,12 @@ dirname = ''
 station = ''
 outdir = ''
 nbandpol = 0
-plot_graph = False
+show_graph = False
 dirname_exists = True
 station_data_exist = True
-plot_xcorrmx = False
-plot_all = False
+show_xcorrmx = False
+process_all = False
+no_plots = False
 
 for opt, val in optlist:
     if opt == '-m':
@@ -152,11 +151,14 @@ for opt, val in optlist:
         if not os.path.isdir(outdir):
             os.mkdir(outdir)
     elif opt == '-x':
-        plot_xcorrmx = True
+        show_xcorrmx = True
     elif opt == '-p':
-        plot_graph = True
+        show_graph = True
     elif opt == '-a':
-        plot_all = True
+        process_all = True
+    elif opt == '-n':
+        no_plots = True
+
 
 print('Median threshold: ' + str(threshold_median))
 str_mf = '_m' + '%4.2f' % threshold_median
@@ -215,13 +217,14 @@ if False in [dirname_exists,station_data_exist]:
 
 
 
-if plot_all:
-    plot_graph = False     # If -a is present, -p is ignored
+if process_all:
+    show_graph = False       # If -a is present, -p is ignored
+    show_xcorrmx = False     # If -a is present, -x is ignored
 else: 
     station = station[0]   # If option '-a' not given, use only first station
     n_station = 1
 
-if plot_all:
+if process_all:
     #
     # If -a, get list of all the directories with data starting from 4-digit 
     # experiment code
@@ -291,7 +294,7 @@ for iddir in range(n_datadir):
     fns = glob.glob(datadir[iddir] + '/bandmodel.??????.?.?.?.dat')
     nfns = len(fns)
     if nfns == 0:          # No data in the directory 
-        if not plot_all:
+        if not process_all:
             print('WARNING: No data on path ' + datadir[iddir])
         fwarn.write('WARNING: No data on path ' + datadir[iddir] + '\n')
         fwarn.flush()
@@ -331,7 +334,7 @@ for iddir in range(n_datadir):
     #
     # Progress
     #
-    if plot_all:
+    if process_all:
         sys.stdout.write("\r# %d of %d, Exp. %s %s" % \
                          (iddir+1, n_datadir, exc, exn))
         sys.stdout.flush()
@@ -343,7 +346,7 @@ for iddir in range(n_datadir):
                            station[istn] + '.?.?.dat')
         nbandpol = len(fnames)
         if nbandpol == 0:          # No data for the station
-            if not plot_all:
+            if not process_all:
                 print('WARNING: No data for station ' + station[istn] + \
                       ' on path ' + datadir[iddir])
             fwarn.write('WARNING: No data for station ' + station[istn] + \
@@ -578,6 +581,11 @@ for iddir in range(n_datadir):
         sel_bp += sel_st_bp + '  '
         
         #
+        # Do not create and do not save plots
+        #
+        if no_plots: continue  # ========================================== >>>
+
+        #
         # Create a plot for each band/pol we have data for (on a 2X4 grid)
         #
         fig = plt.figure(figsize=(8.5,11))
@@ -665,12 +673,12 @@ for iddir in range(n_datadir):
         fig2.savefig(fig_xcorrmx)
 
 
-        if plot_graph:
+        if show_graph:
             fig.show()
         else:
             plt.close(fig)
 
-        if plot_xcorrmx:
+        if show_xcorrmx:
             fig2.show()
         else:
             plt.close(fig2)
@@ -678,7 +686,7 @@ for iddir in range(n_datadir):
     if nbandpol != 0:          # Data for the station exist 
         fsel.write(sel_bp + '\n')
         fsel.flush()
-        if not plot_all:
+        if not process_all:
             print('code exname     selected band-pols')
             print(sel_bp)
 
