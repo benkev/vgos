@@ -26,49 +26,49 @@ Arguments:
   -s <a station letter>, like E, G, H ... (or in lower case, e, g, h ...);
   -d <pcc_datfiles directory>       like /data/geodesy/3686/pcc_datfiles
   -o <output directory name>        where .png graphs and .txt logs are saved
-  -x    plot x-correlation matrix      (TO BE REPLACED BY -c!!!!!!!)
-  -p    show band-pol plot in X-window (TO BE REPLACED BY -b!!!!!!!)
+  -c    plot x-correlation matrix      (TO BE REPLACED BY -c!!!!!!!)
+  -b    plot band-pol plot in X-window (TO BE REPLACED BY -b!!!!!!!)
   -a    process all available data under directory in -d (like -d /data/geodesy)
         If more stations are given in -s, like -s EY or -s VIGH, only the
         data for those stations are plotted and saved in -o directory.
-        If -a is present, -p is ignored (for too many windows would be open).
+        If -a is present, -b and -c are ignored (for too many windows would be open).
   -n    do not create plots and do not save them in .png files
   -h    print this text.
 
 Examples:
 
 (1) Select good band-pols in experiment 3658 from station E. Save the band-pol
-plot in directory pltE. Save the correlation matrix plot (-x). Show both plots
-on the screen (-p). 
+plot in directory pltE. Save the correlation matrix plot (-c). Show both plots
+on the screen (-b). 
 The process of successive selection of good band-pols is logged in text file 
 bandpol_E_3658_VT8204.txt. 
 The plots are saved as bandpol_E_3658_VT8204.png and xcorrmx_E_3658_VT8204.png: 
 
 %run select_bandpols.py -s E -d /data/geodesy/3658/pcc_datfiles_jb/ -o pltE \
-                          -p -x
+                          -b -c
 
 (2) Select good band-pols in all (-a) the experimental data from station V
 located under directory /data/geodesy/. 
 Save the band-pol plots in directory pltV. Save the correlation matrix plots
-(-x). The key -p (show plots on the screen) is ignored when -a is used.  
+(-c). The key -b (show plots on the screen) is ignored when -a is used.  
 The processes of successive selection of good band-pols are
 logged in text file bandpol_V_<exp.code>_<exp.name>.txt. 
 The plots are saved as bandpol_E_<exp.code>_<exp.name>.png and 
 xcorrmx_E_<exp.code>_<exp.name>.png.
 The diagnostic messages are logged in diagnostics_st_E.txt:
 
-%run select_bandpols.py -s V -d /data/geodesy/ -o pltV -p -x -a
+%run select_bandpols.py -s V -d /data/geodesy/ -o pltV -b -c -a
 
 (3) Select good band-pols in all (-a) the experimental data from stations
 I and Y. Save the band-pol plots in directory pltV. Save the correlation matrix
-plots (-x).  
+plots (-c).  
 The processes of successive selection of good band-pols are
 logged in text file bandpol_<station>_<exp.code>_<exp.name>.txt. 
 The plots are saved as bandpol_<station>_<exp.code>_<exp.name>.png and 
 xcorrmx_<station>_<exp.code>_<exp.name>.png: 
 The diagnostic messages are logged in diagnostics_st_IY.txt:
 
-%run select_bandpols.py -s IY -d /data/geodesy/ -o pltIY -x -a
+%run select_bandpols.py -s IY -d /data/geodesy/ -o pltIY -c -a
 '''
 
 
@@ -109,7 +109,7 @@ if sys.argv[1:] == []: # Print help text and exit if no command line options
     print(help_text)
     raise SystemExit
 
-optlist = getopt.getopt(sys.argv[1:], 'm:s:d:o:phxan')[0]
+optlist = getopt.getopt(sys.argv[1:], 'm:s:d:o:abchn')[0]
 
 for opt, val in optlist:
     if opt == '-h':  # Print help text and exit if there is '-h' among options
@@ -150,9 +150,9 @@ for opt, val in optlist:
             outdir += '/'
         if not os.path.isdir(outdir):
             os.mkdir(outdir)
-    elif opt == '-x':
+    elif opt == '-c':
         show_xcorrmx = True
-    elif opt == '-p':
+    elif opt == '-b':
         show_graph = True
     elif opt == '-a':
         process_all = True
@@ -218,8 +218,8 @@ if False in [dirname_exists,station_data_exist]:
 
 
 if process_all:
-    show_graph = False       # If -a is present, -p is ignored
-    show_xcorrmx = False     # If -a is present, -x is ignored
+    show_graph = False       # If -a is present, -b is ignored
+    show_xcorrmx = False     # If -a is present, -c is ignored
 else: 
     station = station[0]   # If option '-a' not given, use only first station
     n_station = 1
