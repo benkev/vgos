@@ -79,18 +79,19 @@ The format of any line in the file \verb@selections_st*.txt@ allows its substitu
 
 Arguments: \\
 \texttt{  -m <threshold>}:    threshold for the correlation median, -1 to 1 (default 0.5). \\
-\texttt{ -s <a station letter>}, like E, G, H ... (or in lower case, e, g, h ...). \\
+\texttt{  -s <a station letter>}, like E, G, H ... (or in lower case, e, g, h ...). \\
 \texttt{  -d <pcc\_datfiles directory>}, like \texttt{/data/geodesy/3686/pcc\_datfiles} \\
 \texttt{  -o <output directory name>} where \texttt{.png} graphs and \texttt{.txt} logs are saved. \\
-\texttt{  -x}: plot cross-correlation matrix. \\
-\texttt{  -p}: show band-pol plot in X-window. \\
-\texttt{  -a}: Make \texttt{.png} plots and \texttt{.txt} files for all available data under directory in -d (like \texttt{-d /data/geodesy}). If more stations are given in -s, like \texttt{-s EY} or \texttt{-s VIGH}, only data for those stations are plotted and saved in -o directory. If -a is present, -p is ignored (for too many windows would be opened). \\
+\texttt{  -b}: show band-pol plot in X-window. \\
+\texttt{  -c}: show cross-correlation matrix. \\
+\texttt{  -n}: do not create plots and do not save them in .png files. \\
+\texttt{  -a}: Make \texttt{.png} plots and \texttt{.txt} files for all available data under directory in -d (like \texttt{  -d /data/geodesy}). If more stations are given in -s, like \texttt{-s EY} or \texttt{-s VIGH}, only data for those stations are plotted and saved in -o directory. If -a is present, -b and -c are ignored (for too many windows would be opened). \\
   -h print the help text. \\
 
 Examples:
 
 (1) Select good band-pols in experiment 3658 from station E. Save the band-pol
-plot in directory \texttt{pltE}. Save the correlation matrix plot (-x). Show both plots
+plot in directory \texttt{pltE}. Save the correlation matrix plot (-c). Show both plots
 on the screen (-p). 
 The process of successive selection of good band-pols is logged in text file 
 \verb$bandpol_E_3658_VT8204.txt$. 
@@ -98,12 +99,12 @@ The plots are saved as \verb$bandpol_E_3658_VT8204.png$ and \\
 \verb$xcorrmx_E_3658_VT8204.png$: 
 
 \verb$%run select_bandpols.py -s E -d /data/geodesy/3658/pcc_datfiles\jb/ \$ \\
-\verb$                            -o pltE -p -x$
+\verb$                            -o pltE -b -c$
 
 (2) Select good band-pols in all the experimental data from station V
 located under directory /data/geodesy/. 
 Save the band-pol plots in directory pltV. Save the correlation matrix plots
-(-x). The key -p (show plots on the screen) is ignored when -a is used.  
+(-c). The key -b (show plots on the screen) is ignored when -a is used.  
 The processes of successive selection of good band-pols are
 logged in text file \verb$bandpol_V_<exp.code>_<exp.name>.txt$. 
 The plots are saved as \verb$bandpol_E_<exp.code>_<exp.name>.png$ and \\
@@ -111,16 +112,16 @@ The plots are saved as \verb$bandpol_E_<exp.code>_<exp.name>.png$ and \\
 The diagnostic messages are logged in the file\\
 \verb$diagnostics_st_E.txt$:
 
-\verb$%run select_bandpols.py -s V -d /data/geodesy/ -o pltV -p -x -a$
+\verb$%run select_bandpols.py -s V -d /data/geodesy/ -o pltV -b -c -a$
 
 (3) Select good band-pols in all the experimental data from stations
 I and Y. Save the band-pol plots in directory \verb$pltV$. Save the correlation matrix
-plots (-x).  
+plots (-c).  
 The processes of successive selection of good band-pols are logged in the text file \verb$bandpol_<station>_<exp.code>_<exp.name>.txt$. The plots are saved as \verb$bandpol_<station>_<exp.code>_<exp.name>.png$ and \\
 \verb$xcorrmx_<station>_<exp.code>_<exp.name>.png$.
 The diagnostic messages are logged in the file \verb@diagnostics_st_IY.txt@:
 
-\verb$%run select_bandpols.py -s IY -d /data/geodesy/ -o pltIY -x -a$
+\verb$%run select_bandpols.py -s IY -d /data/geodesy/ -o pltIY -c -a$
 
 
 
