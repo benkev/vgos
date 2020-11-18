@@ -26,12 +26,13 @@ Arguments:
   -s <a station letter>, like E, G, H ... (or in lower case, e, g, h ...);
   -d <pcc_datfiles directory>       like /data/geodesy/3686/pcc_datfiles
   -o <output directory name>        where .png graphs and .txt logs are saved
-  -c    plot x-correlation matrix      (TO BE REPLACED BY -c!!!!!!!)
-  -b    plot band-pol plot in X-window (TO BE REPLACED BY -b!!!!!!!)
+  -b    show band-pol plot in X-window
+  -c    show x-correlation matrix
   -a    process all available data under directory in -d (like -d /data/geodesy)
         If more stations are given in -s, like -s EY or -s VIGH, only the
         data for those stations are plotted and saved in -o directory.
-        If -a is present, -b and -c are ignored (for too many windows would be open).
+        If -a is present, -b and -c are ignored (for too many windows would 
+        be opened).
   -n    do not create plots and do not save them in .png files
   -h    print this text.
 
