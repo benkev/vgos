@@ -66,11 +66,11 @@ Obviously, in Experiment VT9231 on Station H (Kokee) three band-pol channels, AX
 
 The script \texttt{select\_bandpols.py} selects good band-pols whose rows in the correlation matrix have medians below the threshold (default value 0.5). The rows and columns of bad band-pols are iteratively removed from the matrix, improving the median values for other band-pols, until all medians are above the threshold. The correlation matrix, medians, and multiple correlation coefficients on each iteration (if any) are saved in text files.
 
+Earlier, the coefficient of multiple correlation was considered as a candidate for the discriminator between good and bad band-pols. For each band-pol channel the multiple correlation with other seven was calculated. This parameter did not prove to be as reliable as the median of correlations of each with all others and is not used here. However, the coefficients of multiple correlation are calculated and printed for each channel.
+
 The script can work on all the data (option -a) for one or several stations One can specify them in option \texttt{-s}, like \texttt{-s E, -s EGY}, or \texttt{-s IEHV}.
 
-The script \texttt{select\_bandpols.py} generates plots of the band-pols for one experiment on one station, or all the experiments on one or more stations. It computes medians for the rows (or columns) of the correlation matrix.
-
-The plots with with the correlation median below its threshold are marked as "Rejected". 
+The script \texttt{select\_bandpols.py} generates plots of the band-pols for one experiment on one station, or all the experiments on one or more stations. It computes medians for the rows (or columns) of the correlation matrix. The plots with with the correlation median below its threshold are marked as "Rejected". 
 
 The selected band-pols are saved in the file \\
 \verb$selections_st_<station-name(s)>_m<median-threshold>.txt$. 
@@ -123,6 +123,19 @@ The diagnostic messages are logged in the file \verb@diagnostics_st_IY.txt@:
 
 \verb$%run select_bandpols.py -s IY -d /data/geodesy/ -o pltIY -c -a$
 
+(4) Fig.~\ref{bpplot} shows an example of \verb$select_bandpols.py$ graphic output for the command: \\
+\verb@%run select_bandpols.py -s E -d /data/geodesy/3715/pcc_datfiles/ -o 3715 -m 0.98 -b -c@
+
+\begin{figure*}   [ht!]
+\epsscale{0.88}
+\plotone{bandpol_E_3715_VO0009_m0.98.eps}
+\caption{\small A plot of all the band-pol channels performed by \texttt{select\_bandpols.py}. The channels A:X and B:Y were rejected because the median of cross-correlations with all other channels is less than 0.98. Another parameter, the multiple correlation coefficient (Mult-corr), is printed next to Median for comparison.
+\label{bpplot}}
+\end{figure*}
+
+
+
+
 
 
 \section{Script \texttt{generate\_pcmt.py}: Bulk Generation of PCMT Files}
@@ -152,6 +165,7 @@ Example: \\
 An example of \texttt{rms\_pcmt.py} plot is shown in Fig.~\ref{pcmt_comp}.
 
 \begin{figure*}   [ht!]
+\epsscale{1.0}
 \plotone{pcmt_comp.eps}
 \caption{\small An example of \texttt{rms\_pcmt.py} output.
 \label{pcmt_comp}}
