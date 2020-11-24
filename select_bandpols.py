@@ -360,8 +360,10 @@ for iddir in range(n_datadir):
 
         st_exc_exn = station[istn] + '_' + exc + '_' + exn
         st_exc_exn_mf = station[istn] + '_' + exc + '_' + exn + str_mf
-        fig_bandpol = outdir + 'bandpol_' + st_exc_exn_mf + '.png'
-        fig_xcorrmx = outdir + 'xcorrmx_' + st_exc_exn + '.png'
+        # fig_bandpol = outdir + 'bandpol_' + st_exc_exn_mf + '.png'
+        # fig_xcorrmx = outdir + 'xcorrmx_' + st_exc_exn + '.png'
+        fig_bandpol = outdir + 'bandpol_' + st_exc_exn_mf + '.eps'
+        fig_xcorrmx = outdir + 'xcorrmx_' + st_exc_exn + '.eps'
         fname_bandpol = outdir + 'bandpol_' + st_exc_exn_mf + '.txt'
 
         #
