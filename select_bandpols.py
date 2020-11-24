@@ -546,7 +546,20 @@ for iddir in range(n_datadir):
             
             iiter += 1
 
+        #
+        # In case only two band-pols left, check if any of them satisfy
+        #
+        bp_good_copy = copy.copy(bp_good)
+        for ibp in bp_good_copy:
+            if corr_med_good[ibp] < threshold_median:
+                R_mult_good[ibp] = np.NaN
+                bp_bad.append(ibp)
+                bp_good.remove(ibp)
+
+
         frmul.close()
+
+
 
         #
         # Prepare sel_st_bp, a string with the station letter and selected 
